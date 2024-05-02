@@ -10,11 +10,8 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            Text("なぞなぞ画面")
-                .tabItem {
-                    Image(systemName: "questionmark.bubble.fill")
-                    Text("なぞなぞ")
-                }
+            RiddleView()
+            
             Text("さがす画面")
                 .tabItem {
                     Image(systemName: "magnifyingglass")
