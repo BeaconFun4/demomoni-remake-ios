@@ -12,8 +12,8 @@ struct ContentView: View {
         TabView {
             Text("なぞなぞ画面")
                 .tabItem {
-                    Image(systemName: "message.fill")
-                    Text("メッセージ")
+                    Image(systemName: "questionmark.bubble.fill")
+                    Text("なぞなぞ")
                 }
             Text("さがす画面")
                 .tabItem {
@@ -22,7 +22,7 @@ struct ContentView: View {
                 }
             Text("いちらん画面")
                 .tabItem {
-                    Image(systemName: "face.smiling.fill")
+                    Image(systemName: "puzzlepiece.extension")
                     Text("いちらん")
                 }
         }
