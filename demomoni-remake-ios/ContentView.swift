@@ -14,11 +14,7 @@ struct ContentView: View {
             
             SearchView()
             
-            Text("いちらん画面")
-                .tabItem {
-                    Image(systemName: "puzzlepiece.extension")
-                    Text("いちらん")
-                }
+            PieceListView()
         }
     }
 }
