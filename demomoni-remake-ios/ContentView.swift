@@ -12,11 +12,8 @@ struct ContentView: View {
         TabView {
             RiddleView()
             
-            Text("さがす画面")
-                .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("さがす")
-                }
+            SearchView()
+            
             Text("いちらん画面")
                 .tabItem {
                     Image(systemName: "puzzlepiece.extension")
