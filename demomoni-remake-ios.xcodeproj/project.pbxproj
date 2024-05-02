@@ -11,6 +11,7 @@
 		4FDD2E502BE3BA0F00B91618 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FDD2E4F2BE3BA0F00B91618 /* ContentView.swift */; };
 		4FDD2E522BE3BA1000B91618 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FDD2E512BE3BA1000B91618 /* Assets.xcassets */; };
 		4FDD2E562BE3BA1000B91618 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FDD2E552BE3BA1000B91618 /* Preview Assets.xcassets */; };
+		4FE84FB12BE3C8EA00ED2101 /* RiddleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE84FB02BE3C8EA00ED2101 /* RiddleView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +21,7 @@
 		4FDD2E512BE3BA1000B91618 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		4FDD2E532BE3BA1000B91618 /* demomoni_remake_ios.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = demomoni_remake_ios.entitlements; sourceTree = "<group>"; };
 		4FDD2E552BE3BA1000B91618 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		4FE84FB02BE3C8EA00ED2101 /* RiddleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RiddleView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +56,7 @@
 			children = (
 				4FDD2E4D2BE3BA0F00B91618 /* demomoni_remake_iosApp.swift */,
 				4FDD2E4F2BE3BA0F00B91618 /* ContentView.swift */,
+				4FE84FAF2BE3C8C900ED2101 /* Riddle */,
 				4FDD2E512BE3BA1000B91618 /* Assets.xcassets */,
 				4FDD2E532BE3BA1000B91618 /* demomoni_remake_ios.entitlements */,
 				4FDD2E542BE3BA1000B91618 /* Preview Content */,
@@ -67,6 +70,14 @@
 				4FDD2E552BE3BA1000B91618 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		4FE84FAF2BE3C8C900ED2101 /* Riddle */ = {
+			isa = PBXGroup;
+			children = (
+				4FE84FB02BE3C8EA00ED2101 /* RiddleView.swift */,
+			);
+			path = Riddle;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -141,6 +152,7 @@
 			files = (
 				4FDD2E502BE3BA0F00B91618 /* ContentView.swift in Sources */,
 				4FDD2E4E2BE3BA0F00B91618 /* demomoni_remake_iosApp.swift in Sources */,
+				4FE84FB12BE3C8EA00ED2101 /* RiddleView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
