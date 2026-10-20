@@ -23,12 +23,18 @@ struct SearchView: View {
 
     /// 今、探すべきか
     private var shouldScan: Bool {
-        Self.shouldScan(isVisible: isVisible, scenePhase: scenePhase)
+        Self.shouldScan(
+            isVisible: isVisible,
+            scenePhase: scenePhase,
+            isCovered: showsTutorial || gotPiece != nil
+        )
     }
 
-    /// さがすタブが画面に出ていて、アプリがバックグラウンドでないときだけ探す
-    nonisolated static func shouldScan(isVisible: Bool, scenePhase: ScenePhase) -> Bool {
-        isVisible && scenePhase != .background
+    /// さがすタブが画面に出ていて、アプリがバックグラウンドでなく、
+    /// チュートリアルやゲット画面で覆われていないときだけ探す。
+    /// 覆われている間に検知すると、獲得を保存したのにゲット画面を出せないことがあるため
+    nonisolated static func shouldScan(isVisible: Bool, scenePhase: ScenePhase, isCovered: Bool) -> Bool {
+        isVisible && scenePhase != .background && !isCovered
     }
 
     var body: some View {
