@@ -1,0 +1,16 @@
+{
+    "beacons": [
+        {
+            "beaconId": 0,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 5000
+        },
+        {
+            "beaconId": 1,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 6000
+        }
+    ]
+}
