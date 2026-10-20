@@ -1,0 +1,24 @@
+{
+    "pieces": [
+        {
+            "id": 0,
+            "name": "元町公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.794689",
+            "longitude": "140.754003",
+            "area": "元町・函館山",
+            "image": "piece14"
+        },
+        {
+            "id": 1,
+            "name": "函館山",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.759167",
+            "longitude": "140.704444",
+            "area": "元町・函館山",
+            "image": "piece1"
+        }
+    ]
+}
