@@ -103,7 +103,9 @@ struct SearchView: View {
         }
         detector.clearDetectedPiece()
         let collection = PieceCollection(context: modelContext)
-        guard gotPiece == nil,
+        // チュートリアルやゲット画面を出している間は保存しない（ゲット画面を出せないため。閉じた後の検知でまた拾う）
+        guard !showsTutorial,
+              gotPiece == nil,
               let collectedPieceIDs = try? collection.collectedPieceIDs(),
               let piece = PieceAcquisition.newPiece(detected: detected, collectedPieceIDs: collectedPieceIDs) else {
             return
