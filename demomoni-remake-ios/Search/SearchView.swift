@@ -13,6 +13,18 @@ struct SearchView: View {
     @Environment(BeaconDetector.self) private var detector
     @Environment(\.scenePhase) private var scenePhase
     @State private var showsTutorial = false
+    /// さがすタブが画面に出ているか。`TabView` はほかのタブにいる間も View を残すので、自分で持つ
+    @State private var isVisible = false
+
+    /// 今、探すべきか
+    private var shouldScan: Bool {
+        Self.shouldScan(isVisible: isVisible, scenePhase: scenePhase)
+    }
+
+    /// さがすタブが画面に出ていて、アプリがバックグラウンドでないときだけ探す
+    nonisolated static func shouldScan(isVisible: Bool, scenePhase: ScenePhase) -> Bool {
+        isVisible && scenePhase != .background
+    }
 
     var body: some View {
         NavigationStack {
@@ -48,16 +60,16 @@ struct SearchView: View {
             }
         }
         .onAppear {
-            detector.start()
+            isVisible = true
         }
         .onDisappear {
-            detector.stop()
+            isVisible = false
         }
-        .onChange(of: scenePhase) { _, phase in
-            // バックグラウンドでは探さない。さがすタブに戻ってきたら探し直す
-            if phase == .active {
+        .onChange(of: shouldScan, initial: true) { _, scan in
+            // ほかのタブにいる間とバックグラウンドでは探さない。さがすタブに戻ってきたら探し直す
+            if scan {
                 detector.start()
-            } else if phase == .background {
+            } else {
                 detector.stop()
             }
         }
