@@ -14,7 +14,9 @@ final class CollectedPiece {
     var pieceID: Int
     /// 最初に獲得した日時
     var collectedAt: Date
-    /// サインの `PKDrawing` のデータ（`PKDrawing.dataRepresentation()`）。まだ書いていなければ `nil`
+    /// サインの `PKDrawing` のデータ（`PKDrawing.dataRepresentation()`）。まだ書いていなければ `nil`。
+    /// 大きくなることがあるので、ストアの外のファイルに置く（一覧で id だけを読むときに読み込まない）
+    @Attribute(.externalStorage)
     var signature: Data?
 
     init(pieceID: Int, collectedAt: Date, signature: Data? = nil) {

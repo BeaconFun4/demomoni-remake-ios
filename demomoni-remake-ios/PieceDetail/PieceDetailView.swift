@@ -19,6 +19,8 @@ struct PieceDetailView: View {
         _records = Query(filter: #Predicate<CollectedPiece> { $0.pieceID == pieceID })
     }
 
+    @State private var showsSignature = false
+
     private var record: CollectedPiece? {
         records.first
     }
@@ -35,14 +37,16 @@ struct PieceDetailView: View {
                         min(width * 0.8, 400)
                     }
 
-                // サインを描く画面は次のタスクで作り、ここから開く
-                Button("サインをかく！") {}
-                    .font(.demomoni(size: 26, relativeTo: .title2))
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.large)
-                    .tint(.themeColorPink)
-                    .foregroundStyle(Color.themeColorGray)
-                    .disabled(true)
+                Button("サインをかく！") {
+                    showsSignature = true
+                }
+                .font(.demomoni(size: 26, relativeTo: .title2))
+                .buttonStyle(.glassProminent)
+                .controlSize(.large)
+                .tint(.themeColorPink)
+                .foregroundStyle(Color.themeColorGray)
+                // 獲得していないピースにはサインを保存できない
+                .disabled(record == nil)
 
                 VStack(alignment: .leading, spacing: 12) {
                     Text(PieceDetailText.date(record?.collectedAt))
@@ -60,6 +64,9 @@ struct PieceDetailView: View {
         }
         .background(Color.themeColorBlue)
         .navigationBarTitleDisplayMode(.inline)
+        .fullScreenCover(isPresented: $showsSignature) {
+            SignatureView(piece: piece, signature: record?.signature)
+        }
     }
 }
 
@@ -69,19 +76,25 @@ struct PieceWithSignature: View {
     /// サインの `PKDrawing` のデータ。無ければピースの画像だけ
     let signature: Data?
 
+    /// サインの画像。描き直すたびにデコードしないよう、サインのデータが変わったときだけ作る
+    @State private var signatureImage: UIImage?
+
     var body: some View {
         Image(piece.image)
             .resizable()
             .scaledToFit()
             .overlay {
-                if let signature, let image = SignatureDrawing.image(from: signature) {
-                    Image(uiImage: image)
+                if let signatureImage {
+                    Image(uiImage: signatureImage)
                         .resizable()
                         .scaledToFit()
                 }
             }
+            .task(id: signature) {
+                signatureImage = signature.flatMap { SignatureDrawing.image(from: $0) }
+            }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(signature == nil ? "ピースの画像" : "サインをかいたピースの画像")
+            .accessibilityLabel(signatureImage == nil ? "ピースの画像" : "サインをかいたピースの画像")
     }
 }
 

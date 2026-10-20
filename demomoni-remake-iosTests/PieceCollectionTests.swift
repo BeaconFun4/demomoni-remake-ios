@@ -69,6 +69,16 @@ struct PieceCollectionTests {
         #expect(record.collectedAt == firstDate)
     }
 
+    /// `nil` を保存するとサインを消す（線を全部消して「これでかんせい！」を押したとき）
+    @Test
+    func saveNilSignatureRemovesSignature() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.saveSignature(Data([1]), pieceID: 0)
+        #expect(try collection.saveSignature(nil, pieceID: 0))
+        #expect(try collection.record(pieceID: 0)?.signature == nil)
+        #expect(try collection.isCollected(pieceID: 0))
+    }
+
     /// 獲得していないピースにはサインを保存しない（記録も作らない）
     @Test
     func saveSignatureIgnoresUncollectedPiece() throws {

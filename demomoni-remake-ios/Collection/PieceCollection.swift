@@ -40,10 +40,10 @@ struct PieceCollection {
         return try context.fetch(descriptor).first
     }
 
-    /// 獲得済みのピースにサインを保存する（前のサインは置き換える）
+    /// 獲得済みのピースにサインを保存する（前のサインは置き換える）。`nil` ならサインを消す
     /// - Returns: 保存できたか。獲得していないピースには保存しない
     @discardableResult
-    func saveSignature(_ signature: Data, pieceID: Int) throws -> Bool {
+    func saveSignature(_ signature: Data?, pieceID: Int) throws -> Bool {
         guard let record = try record(pieceID: pieceID) else {
             return false
         }
