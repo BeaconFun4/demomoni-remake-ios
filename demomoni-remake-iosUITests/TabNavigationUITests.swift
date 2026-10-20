@@ -33,6 +33,6 @@ final class TabNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["函館ののっぽ"].exists)
 
         app.tabBars.buttons["いちらん"].tap()
-        XCTAssertTrue(app.staticTexts["いちらん画面"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.navigationBars["いちらん"].waitForExistence(timeout: 5))
     }
 }
