@@ -31,7 +31,8 @@ final class BeaconDetector {
         }
     }
 
-    /// 探し始める。許可をまだ尋ねていなければ尋ね、許可されたら探す。許可が無ければ探さない
+    /// 探し始める。許可をまだ尋ねていなければ尋ね、許可されたら探す。
+    /// 許可が無い・「正確な位置情報」がオフなら探さない（画面で `permission` を見て案内を出す）
     func start() {
         wantsScanning = true
         switch permission {
@@ -39,7 +40,7 @@ final class BeaconDetector {
             scanner.requestPermission()
         case .authorized:
             beginRanging()
-        case .denied, .restricted:
+        case .denied, .restricted, .reducedAccuracy:
             break
         }
     }

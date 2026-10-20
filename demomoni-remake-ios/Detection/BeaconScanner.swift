@@ -14,17 +14,20 @@ nonisolated enum LocationPermission: Equatable, Sendable {
     case denied
     /// 機能制限などで許可できない
     case restricted
-    /// 使用中の許可がある
+    /// 使用中の許可はあるが「正確な位置情報」がオフ。iBeacon の ranging はできない
+    case reducedAccuracy
+    /// 使用中の許可があり、正確な位置情報も使える
     case authorized
 
-    init(_ status: CLAuthorizationStatus) {
+    /// CoreLocation の許可と精度から作る
+    init(_ status: CLAuthorizationStatus, accuracy: CLAccuracyAuthorization = .fullAccuracy) {
         switch status {
         case .notDetermined:
             self = .notDetermined
         case .restricted:
             self = .restricted
         case .authorizedWhenInUse, .authorizedAlways:
-            self = .authorized
+            self = accuracy == .fullAccuracy ? .authorized : .reducedAccuracy
         case .denied:
             self = .denied
         @unknown default:

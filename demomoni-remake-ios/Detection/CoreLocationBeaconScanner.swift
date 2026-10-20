@@ -21,7 +21,7 @@ final class CoreLocationBeaconScanner: NSObject, BeaconScanner {
     }
 
     var permission: LocationPermission {
-        LocationPermission(manager.authorizationStatus)
+        LocationPermission(manager.authorizationStatus, accuracy: manager.accuracyAuthorization)
     }
 
     func requestPermission() {
@@ -50,7 +50,8 @@ final class CoreLocationBeaconScanner: NSObject, BeaconScanner {
 
 extension CoreLocationBeaconScanner: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        let permission = LocationPermission(manager.authorizationStatus)
+        // 「正確な位置情報」を切り替えたときも、このメソッドが呼ばれる
+        let permission = LocationPermission(manager.authorizationStatus, accuracy: manager.accuracyAuthorization)
         MainActor.assumeIsolated {
             onEvent?(.permissionChanged(permission))
         }
