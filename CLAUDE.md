@@ -34,15 +34,35 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 
 ## アーキテクチャ
 
-「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。現状は画面の雛形だけ。
+「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。元アプリ（BeaconFun4/demomoni-ios。UIKit + Storyboard。private）の画面・文言・色・画像を、標準のコンポーネントと Liquid Glass で作り直している。
 
-- SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect` など）は分岐なしで使える
-- エントリポイントは `DemomoniApp`
-- `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目）
-  - `Riddle/RiddleView` … なぞなぞ
-  - `Search/SearchView` … さがす
-  - `PieceList/PieceListView` … いちらん
-- 画面は機能ごとのディレクトリ（`Riddle/` など）に分ける
+- SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect`・`.glass`・`.glassProminent`・`GlassEffectContainer`）は分岐なしで使う
+- 外観はライト固定（元アプリの色・画像が白地の前提）。タブの選択色は `ThemeColorPink`（`tint`）
+- エントリポイントは `DemomoniApp`。フォントの登録・`ModelContainer`・`BeaconDetector` を作り、Environment で画面に渡す
+- `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目のさがす）
+  - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）
+  - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
+  - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
+- 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
+
+データと状態:
+
+- `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。2 件ずつ）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込みは `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
+- `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`
+- サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
+- 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない
+
+起動引数（`LaunchOptions` の 1 か所で読む。UI テストと PR のスクリーンショットの撮影で使う）:
+
+| 引数 | 動き |
+| --- | --- |
+| `-uiTesting` | メモリ上の空のストアで起動し、実際の位置情報を使わない（許可のダイアログを出さない） |
+| `-fakeBeaconID <id>` | 探し始めて 2 秒後に、その beaconId のビーコンを 1 回見つけたことにする（擬似検知） |
+| `-collectedPieceIDs <id>,<id>` | `-uiTesting` のときだけ、そのピースを獲得済みにして起動する |
+
+- Unit テストのホストとして起動したとき（環境変数 `XCTestConfigurationFilePath` がある）も、実際の位置情報は使わない
+- UI テストでタブを押すときは `XCUIApplication.tabButton(_:)` を使う（iPad ではタブが `tabBars` に入らない）
 
 ## CI
 
