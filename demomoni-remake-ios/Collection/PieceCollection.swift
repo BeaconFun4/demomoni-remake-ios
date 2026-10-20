@@ -19,7 +19,7 @@ struct PieceCollection {
             return false
         }
         context.insert(CollectedPiece(pieceID: pieceID, collectedAt: date))
-        try context.save()
+        try saveOrRollback()
         return true
     }
 
@@ -48,8 +48,18 @@ struct PieceCollection {
             return false
         }
         record.signature = signature
-        try context.save()
+        try saveOrRollback()
         return true
+    }
+
+    /// 保存する。失敗したら保存前の変更を捨てる（獲得していないのに獲得済みに見えないようにする）
+    private func saveOrRollback() throws {
+        do {
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
     }
 }
 
