@@ -5,14 +5,40 @@
 //  Created by 村石 拓海 on 2024/05/02.
 //
 
+import SwiftData
 import SwiftUI
 
+/// いちらんタブ。獲得したピースを五稜郭の盤に並べる
 struct PieceListView: View {
-    var body: some View {
-        Text("いちらん画面")
-            .tabItem {
-                Image(systemName: "puzzlepiece.extension")
-                Text("いちらん")
-            }
+    @Environment(\.catalog) private var catalog
+    @Query private var collected: [CollectedPiece]
+
+    /// 獲得したピース（同梱データの順）
+    private var collectedPieces: [Piece] {
+        let ids = Set(collected.map(\.pieceID))
+        return catalog.pieces.filter { ids.contains($0.id) }
     }
+
+    var body: some View {
+        NavigationStack {
+            PieceBoard(pieces: collectedPieces)
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.themeColorBlue)
+                .navigationTitle("いちらん")
+                .navigationBarTitleDisplayMode(.inline)
+        }
+        .tabItem {
+            Image(systemName: "puzzlepiece.extension")
+            Text("いちらん")
+        }
+    }
+}
+
+#Preview {
+    TabView {
+        PieceListView()
+    }
+    // swiftlint:disable:next force_try
+    .modelContainer(try! .demomoni(inMemory: true))
 }
