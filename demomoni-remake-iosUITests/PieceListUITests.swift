@@ -18,7 +18,7 @@ final class PieceListUITests: XCTestCase {
         app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        app.tabBars.buttons["いちらん"].tap()
+        app.tabButton("いちらん").tap()
         XCTAssertTrue(app.navigationBars["いちらん"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.images["ピース No.14 元町公園"].exists)
         XCTAssertFalse(app.images["ピース No.1 函館山"].exists)
@@ -31,7 +31,7 @@ final class PieceListUITests: XCTestCase {
         app.launchArguments = ["-uiTesting", "-collectedPieceIDs", "0"]
         app.launch()
 
-        app.tabBars.buttons["いちらん"].tap()
+        app.tabButton("いちらん").tap()
         XCTAssertTrue(app.images["ピース No.14 元町公園"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.images["ピース No.1 函館山"].exists)
     }
