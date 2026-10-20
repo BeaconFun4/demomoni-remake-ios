@@ -27,8 +27,11 @@ final class GotPieceUITests: XCTestCase {
         app.buttons["とじる"].tap()
         XCTAssertTrue(title.waitForNonExistence(timeout: 5))
 
-        // さがすタブに戻ると探し直すが、獲得済みなのでもう出ない
+        // タブを行き来してさがすタブに戻ると探し直すが、獲得済みなのでもう出ない
         XCTAssertTrue(app.staticTexts["まちをあるいてみよう！！"].waitForExistence(timeout: 5))
-        XCTAssertFalse(title.waitForExistence(timeout: 5))
+        app.tabButton("いちらん").tap()
+        app.tabButton("さがす").tap()
+        XCTAssertTrue(app.staticTexts["まちをあるいてみよう！！"].waitForExistence(timeout: 5))
+        XCTAssertFalse(title.waitForExistence(timeout: 10))
     }
 }
