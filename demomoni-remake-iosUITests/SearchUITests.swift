@@ -29,7 +29,9 @@ final class SearchUITests: XCTestCase {
         app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        app.buttons["あそびかた"].tap()
+        let tutorialButton = app.buttons["あそびかた"]
+        XCTAssertTrue(tutorialButton.waitForExistence(timeout: 10))
+        tutorialButton.tap()
         let tutorial = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "ピースのありかがわかるよ！！")).firstMatch
         XCTAssertTrue(tutorial.waitForExistence(timeout: 5))
         XCTAssertTrue(tutorial.label.contains("ここをおしてなぞなぞをとくと"))
