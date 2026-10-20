@@ -14,11 +14,19 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
     /// 実際の位置情報（CoreLocation）で探すか。`-uiTesting` と Unit テストのホストでは使わない
     /// （位置情報の許可のダイアログがテストの画面を塞がないようにする）
     var usesLocationServices = true
+    /// `-collectedPieceIDs <id>,<id>`: メモリ上のストアで、そのピースを獲得済みにして起動する（`-uiTesting` と一緒に使う）
+    var collectedPieceIDs: [Int] = []
 
-    init(usesInMemoryStore: Bool = false, fakeBeaconID: Int? = nil, usesLocationServices: Bool = true) {
+    init(
+        usesInMemoryStore: Bool = false,
+        fakeBeaconID: Int? = nil,
+        usesLocationServices: Bool = true,
+        collectedPieceIDs: [Int] = []
+    ) {
         self.usesInMemoryStore = usesInMemoryStore
         self.fakeBeaconID = fakeBeaconID
         self.usesLocationServices = usesLocationServices
+        self.collectedPieceIDs = collectedPieceIDs
     }
 
     /// 起動引数（`ProcessInfo.processInfo.arguments`）と環境変数から読む
@@ -29,6 +37,9 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
         usesLocationServices = !isUITesting && environment["XCTestConfigurationFilePath"] == nil
         if let index = arguments.firstIndex(of: "-fakeBeaconID"), arguments.indices.contains(index + 1) {
             fakeBeaconID = Int(arguments[index + 1])
+        }
+        if let index = arguments.firstIndex(of: "-collectedPieceIDs"), arguments.indices.contains(index + 1) {
+            collectedPieceIDs = arguments[index + 1].split(separator: ",").compactMap { Int($0) }
         }
     }
 

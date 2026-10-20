@@ -19,8 +19,16 @@ struct DemomoniApp: App {
         // 画面の文言に使うニコモジ+ を、最初の画面を描く前に登録する
         DemomoniFont.register()
 
+        let options = LaunchOptions.current
         do {
-            modelContainer = try .demomoni(inMemory: LaunchOptions.current.usesInMemoryStore)
+            modelContainer = try .demomoni(inMemory: options.usesInMemoryStore)
+            // UI テスト・PR の撮影のために、メモリ上のストアでだけ獲得済みのピースを用意する
+            if options.usesInMemoryStore {
+                let collection = PieceCollection(context: modelContainer.mainContext)
+                for pieceID in options.collectedPieceIDs {
+                    try collection.collect(pieceID: pieceID, at: .now)
+                }
+            }
         } catch {
             fatalError("獲得状態のストアを開けない: \(error)")
         }
