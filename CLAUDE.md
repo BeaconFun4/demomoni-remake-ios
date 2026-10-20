@@ -18,10 +18,6 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination "$DEST" \
   -derivedDataPath "$DD" -parallel-testing-enabled NO -skipPackagePluginValidation -skipMacroValidation
 
-# macOS（ネイティブ）のビルド。CI では確かめていないので、手元で確かめる
-xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination 'platform=macOS' \
-  -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -skipMacroValidation
-
 # SwiftLint（CI と同じく --strict。ビルドか -resolvePackageDependencies の後に、SPM が解決したバイナリを使う）
 "$(find "$DD/SourcePackages/artifacts" -type f -name swiftlint -path '*macos*' | head -1)" lint --strict
 ```
@@ -40,7 +36,7 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 
 「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。現状は画面の雛形だけ。
 
-- SwiftUI。iOS 17.4+（iPhone / iPad）と macOS 14.3+（ネイティブ。Xcode 15 の Multiplatform テンプレートで作られたため）
+- SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect` など）は分岐なしで使える
 - エントリポイントは `DemomoniApp`
 - `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目）
   - `Riddle/RiddleView` … なぞなぞ
@@ -51,7 +47,7 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 ## CI
 
 GitHub Actions の Build（`.github/workflows/build.yml` → `_build.yml`。template-app-ios と同じ）が、SwiftLint（`--strict`）・ビルド・テストを実行する。
-Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simulator だけで確かめる（macOS のビルドは CI に無いので、ループの検証で確かめる）。
+Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simulator だけで確かめる。
 
 - 作業ブランチへの push は Unit テストだけ。PR の作成時と `develop` / `main` / `release/**` への push は UI テストも実行する
 - ループの子 PR（`epic/**` 宛て）では PR のイベントで実行しない（push の Unit テストで確かめる）。最終 PR（`epic/**` → `develop`）は更新のたびに UI テストまで実行する
@@ -100,5 +96,5 @@ Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simul
 ```
 <!-- ralph-kit:snippet end -->
 
-ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は、上の Commands の SwiftLint・test（Unit + UI）・macOS の build。
+ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は、上の Commands の SwiftLint・test（Unit + UI）。
 Simulator は `xcrun simctl list devices available` で UDID を調べて `id=` で指定し、`-derivedDataPath` はスロットごとにリポジトリの外へ分ける。

@@ -4,7 +4,7 @@
 ## 開発環境
 
 - Xcode 26.6
-- iOS 17.4 以上（iPhone / iPad）・macOS 14.3 以上
+- iOS 26.0 以上（iPhone / iPad）
 - Swift 6（Swift 6 言語モード / Strict Concurrency）
 - SwiftUI / Swift Testing / XCTest（UI テスト）
 - SwiftLint 0.65.1（Build Tool Plugin。バイナリだけを配布する [SwiftLintPlugins](https://github.com/SimplyDanny/SwiftLintPlugins) 経由）
@@ -31,7 +31,7 @@ GitHub Actions の Build（[.github/workflows/build.yml](.github/workflows/build
 
 - ドキュメントだけの変更（`**/*.md`、`docs/**`）では実行しません
 - Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
-- 確かめるのは iOS の Simulator だけです。macOS のビルドは手元で確かめます
+- 確かめるのは iOS の Simulator だけです
 - Archive / Upload（App Store Connect への配信）のワークフローはまだありません
 
 ### 卍Github運用について✒卍

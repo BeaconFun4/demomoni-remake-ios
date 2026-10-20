@@ -12,7 +12,7 @@ struct AppInfoTests {
     /// Bundle ID は App Store Connect のアプリと結びつくので、変えるときはこのテストもあわせて直す
     @Test
     func bundleIdentifierComesFromXcconfig() {
-        #expect(Bundle.main.bundleIdentifier == "ml.mrs1669.demomoni-remake-ios")
+        #expect(Bundle.main.bundleIdentifier == "jp.shilokuma.Demomoni")
     }
 
     /// Configs/Project.xcconfig の MARKETING_VERSION が、整数を「.」でつないだ形式（1.0 / 1.0.0）で Info.plist に反映されていることを確認する
