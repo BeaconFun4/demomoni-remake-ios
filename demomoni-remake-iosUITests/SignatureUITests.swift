@@ -60,4 +60,21 @@ final class SignatureUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["ピースの画像"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.descendants(matching: .any)["サインをかいたピースの画像"].exists)
     }
+
+    /// 描いた線を「もどる！」で取り消して保存すると、サインは残らない
+    @MainActor
+    func testUndoThenSaveLeavesNoSignature() throws {
+        let app = XCUIApplication()
+        openSignature(app)
+
+        let canvas = app.descendants(matching: .any)["サインをかくところ"].firstMatch
+        XCTAssertTrue(canvas.waitForExistence(timeout: 5))
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.3))
+            .press(forDuration: 0.1, thenDragTo: canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.7)))
+        app.buttons["もどる！"].tap()
+
+        app.buttons["これでかんせい！"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["ピースの画像"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["サインをかいたピースの画像"].waitForExistence(timeout: 3))
+    }
 }
