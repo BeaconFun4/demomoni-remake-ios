@@ -50,4 +50,12 @@ struct AppInfoTests {
         let description = Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription") as? String
         #expect(description == "近くのビーコンを見つけて、ピースをゲットするために使います")
     }
+
+    /// 位置情報は使用中だけに使う。常に使う許可の利用目的と、バックグラウンドの動作（位置情報の監視）が Info.plist に無いことを確認する
+    @Test
+    func doesNotRequestBackgroundLocation() {
+        #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysAndWhenInUseUsageDescription") == nil)
+        #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysUsageDescription") == nil)
+        #expect(Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") == nil)
+    }
 }
