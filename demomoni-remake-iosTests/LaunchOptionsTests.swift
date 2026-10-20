@@ -19,4 +19,18 @@ struct LaunchOptionsTests {
     func uiTestingUsesInMemoryStore() {
         #expect(LaunchOptions(arguments: ["demomoni-remake-ios", "-uiTesting"]).usesInMemoryStore)
     }
+
+    /// `-fakeBeaconID <id>` で擬似検知するビーコンを指定する
+    @Test
+    func readsFakeBeaconID() {
+        #expect(LaunchOptions(arguments: ["app", "-uiTesting", "-fakeBeaconID", "1"]).fakeBeaconID == 1)
+        #expect(LaunchOptions(arguments: ["app", "-uiTesting"]).fakeBeaconID == nil)
+    }
+
+    /// `-fakeBeaconID` の値が無い・数でないときは、擬似検知しない
+    @Test
+    func ignoresInvalidFakeBeaconID() {
+        #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID"]).fakeBeaconID == nil)
+        #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID", "one"]).fakeBeaconID == nil)
+    }
 }
