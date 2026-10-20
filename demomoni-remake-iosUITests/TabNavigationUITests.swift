@@ -18,7 +18,7 @@ final class TabNavigationUITests: XCTestCase {
         app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["さがす画面"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["まちをあるいてみよう！！"].waitForExistence(timeout: 5))
     }
 
     /// タブを押すと、その画面に切り替わる
