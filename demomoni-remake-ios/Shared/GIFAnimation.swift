@@ -7,11 +7,11 @@ import Foundation
 import ImageIO
 
 /// GIF のフレームと、各フレームを出す秒数。ImageIO で読む
-nonisolated struct GIFAnimation: @unchecked Sendable {
+nonisolated struct GIFAnimation {
     /// GIF に秒数が書かれていないか、短すぎるときに使う 1 フレームの秒数（ブラウザと同じ扱い）
     static let defaultFrameDuration: TimeInterval = 0.1
 
-    /// フレームの画像（`CGImage` は変更できないので、別のスレッドへ渡してもよい）
+    /// フレームの画像
     let frames: [CGImage]
     /// 各フレームを出す秒数
     let durations: [TimeInterval]

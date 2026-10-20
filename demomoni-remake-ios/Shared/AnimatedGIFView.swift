@@ -18,7 +18,19 @@ struct AnimatedGIFView: View {
 
     /// - Parameter assetName: アセットカタログの dataset の名前（例: tekuusa）
     init(assetName: String) {
-        animation = NSDataAsset(name: assetName).flatMap { GIFAnimation(data: $0.data) }
+        animation = Self.animation(named: assetName)
+    }
+
+    /// 読み込んだ GIF。View は描き直しのたびに作り直されるので、アセットごとに 1 回だけ読む
+    private static var cache: [String: GIFAnimation] = [:]
+
+    private static func animation(named assetName: String) -> GIFAnimation? {
+        if let cached = cache[assetName] {
+            return cached
+        }
+        let animation = NSDataAsset(name: assetName).flatMap { GIFAnimation(data: $0.data) }
+        cache[assetName] = animation
+        return animation
     }
 
     var body: some View {
