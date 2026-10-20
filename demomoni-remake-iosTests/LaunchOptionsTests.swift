@@ -42,4 +42,12 @@ struct LaunchOptionsTests {
         let unitTestHost = ["XCTestConfigurationFilePath": "/tmp/x.xctestconfiguration"]
         #expect(!LaunchOptions(arguments: ["app"], environment: unitTestHost).usesLocationServices)
     }
+
+    /// `-collectedPieceIDs` で獲得済みにするピースをカンマ区切りで指定する。数でないものは読み飛ばす
+    @Test
+    func readsCollectedPieceIDs() {
+        #expect(LaunchOptions(arguments: ["app", "-uiTesting", "-collectedPieceIDs", "0,1"]).collectedPieceIDs == [0, 1])
+        #expect(LaunchOptions(arguments: ["app", "-collectedPieceIDs", "1,x"]).collectedPieceIDs == [1])
+        #expect(LaunchOptions(arguments: ["app"]).collectedPieceIDs.isEmpty)
+    }
 }

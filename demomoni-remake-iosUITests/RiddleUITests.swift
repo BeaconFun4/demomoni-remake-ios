@@ -18,7 +18,7 @@ final class RiddleUITests: XCTestCase {
         app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        app.tabBars.buttons["なぞなぞ"].tap()
+        app.tabButton("なぞなぞ").tap()
         app.buttons["函館ののっぽ"].tap()
 
         XCTAssertTrue(app.staticTexts["函館の白くて高いものといえば？"].waitForExistence(timeout: 5))
@@ -36,7 +36,7 @@ final class RiddleUITests: XCTestCase {
         app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        app.tabBars.buttons["なぞなぞ"].tap()
+        app.tabButton("なぞなぞ").tap()
         app.buttons["函館ののっぽ"].tap()
         app.buttons["ヒントをみる"].tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
