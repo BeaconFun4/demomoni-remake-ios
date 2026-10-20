@@ -15,6 +15,7 @@ final class TabNavigationUITests: XCTestCase {
     @MainActor
     func testLaunchSelectsSearchTab() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
         app.launch()
 
         XCTAssertTrue(app.staticTexts["さがす画面"].waitForExistence(timeout: 5))
@@ -24,6 +25,7 @@ final class TabNavigationUITests: XCTestCase {
     @MainActor
     func testTabsSwitchScreens() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
         app.launch()
 
         app.tabBars.buttons["なぞなぞ"].tap()
