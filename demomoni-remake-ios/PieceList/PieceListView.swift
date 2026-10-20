@@ -8,7 +8,7 @@
 import SwiftData
 import SwiftUI
 
-/// いちらんタブ。獲得したピースを五稜郭の盤に並べる
+/// いちらんタブ。獲得したピースを五稜郭の盤に並べ、押すとピース詳細を開く
 struct PieceListView: View {
     @Environment(\.catalog) private var catalog
     @Query private var collected: [CollectedPiece]
@@ -27,6 +27,9 @@ struct PieceListView: View {
                 .background(Color.themeColorBlue)
                 .navigationTitle("いちらん")
                 .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(for: Piece.self) { piece in
+                    PieceDetailView(piece: piece)
+                }
         }
         .tabItem {
             Image(systemName: "puzzlepiece.extension")

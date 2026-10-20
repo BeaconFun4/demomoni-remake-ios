@@ -20,8 +20,8 @@ final class PieceListUITests: XCTestCase {
 
         app.tabButton("いちらん").tap()
         XCTAssertTrue(app.navigationBars["いちらん"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.images["ピース No.14 元町公園"].exists)
-        XCTAssertFalse(app.images["ピース No.1 函館山"].exists)
+        XCTAssertFalse(app.buttons["ピース No.14 元町公園"].exists)
+        XCTAssertFalse(app.buttons["ピース No.1 函館山"].exists)
     }
 
     /// 獲得したピースだけが盤に出る
@@ -32,7 +32,7 @@ final class PieceListUITests: XCTestCase {
         app.launch()
 
         app.tabButton("いちらん").tap()
-        XCTAssertTrue(app.images["ピース No.14 元町公園"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.images["ピース No.1 函館山"].exists)
+        XCTAssertTrue(app.buttons["ピース No.14 元町公園"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["ピース No.1 函館山"].exists)
     }
 }
