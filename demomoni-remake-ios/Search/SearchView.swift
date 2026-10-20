@@ -5,14 +5,19 @@
 //  Created by 村石 拓海 on 2024/05/02.
 //
 
+import SwiftData
 import SwiftUI
 
-/// さがすタブ。表示している間だけ近くの iBeacon を探す。
+/// さがすタブ。表示している間だけ近くの iBeacon を探し、まだ獲得していないピースを見つけたら
+/// 獲得を保存して「ピースをゲットしたよ！！」画面を出す。
 /// 歩くうさぎと道を出し、`genbausa` のボタンでチュートリアルを開く
 struct SearchView: View {
     @Environment(BeaconDetector.self) private var detector
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var modelContext
     @State private var showsTutorial = false
+    /// 「ゲットした」画面に出しているピース
+    @State private var gotPiece: GotPiece?
     /// さがすタブが画面に出ているか。`TabView` はほかのタブにいる間も View を残すので、自分で持つ
     @State private var isVisible = false
 
@@ -58,6 +63,12 @@ struct SearchView: View {
             .sheet(isPresented: $showsTutorial) {
                 TutorialView()
             }
+            .fullScreenCover(item: $gotPiece) { gotPiece in
+                GotPieceView(gotPiece: gotPiece)
+            }
+        }
+        .onChange(of: detector.detectedPiece) { _, detected in
+            receive(detected)
         }
         .onAppear {
             isVisible = true
@@ -77,6 +88,26 @@ struct SearchView: View {
             Image(systemName: "magnifyingglass")
             Text("さがす")
         }
+    }
+
+    /// 検知したピースを受け取る。まだ獲得していなければ獲得を保存し、「ゲットした」画面を出す
+    private func receive(_ detected: Piece?) {
+        guard detected != nil else {
+            return
+        }
+        detector.clearDetectedPiece()
+        let collection = PieceCollection(context: modelContext)
+        guard gotPiece == nil,
+              let collectedPieceIDs = try? collection.collectedPieceIDs(),
+              let piece = PieceAcquisition.newPiece(detected: detected, collectedPieceIDs: collectedPieceIDs) else {
+            return
+        }
+        let now = Date.now
+        // 保存できなければ「ゲットした」画面も出さない（次に検知したときにもう一度保存する）
+        guard (try? collection.collect(pieceID: piece.id, at: now)) == true else {
+            return
+        }
+        gotPiece = GotPiece(piece: piece, collectedAt: now)
     }
 
     /// 道の上を歩くうさぎ。元アプリと同じく、うさぎを道の上のほうに重ねる
