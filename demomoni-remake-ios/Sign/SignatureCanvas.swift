@@ -10,9 +10,9 @@ import SwiftUI
 struct SignatureCanvas: UIViewRepresentable {
     let controller: SignatureCanvasController
 
-    func makeUIView(context: Context) -> PKCanvasView {
+    func makeUIView(context: Context) -> SignatureCanvasView {
         controller.canvasView
     }
 
-    func updateUIView(_ canvasView: PKCanvasView, context: Context) {}
+    func updateUIView(_ canvasView: SignatureCanvasView, context: Context) {}
 }

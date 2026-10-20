@@ -20,7 +20,7 @@ final class SignatureCanvasController {
     private(set) var tool = Tool.pen
 
     /// 描くところ。`SignatureCanvas` がこの View を画面に置く
-    @ObservationIgnored let canvasView = PKCanvasView()
+    @ObservationIgnored let canvasView = SignatureCanvasView()
 
     /// 今のキャンバスの 1 辺。まだ画面に出ていなければ `nil`
     @ObservationIgnored private var side: CGFloat?
@@ -44,11 +44,13 @@ final class SignatureCanvasController {
             return
         }
         if let side {
-            // 回転などで大きさが変わったら、描いたものも同じ割合で拡大・縮小する
+            // 回転などで大きさが変わったら、描いたものも同じ割合で拡大・縮小する。
+            // 取り消しの記録は前の大きさの座標のままなので、戻すと位置がずれる。記録を消す
             canvasView.drawing = SignatureDrawing.denormalized(
                 SignatureDrawing.normalized(canvasView.drawing, fromSide: side),
                 toSide: newSide
             )
+            canvasView.undoManager?.removeAllActions()
         } else if let initialDrawing {
             canvasView.drawing = SignatureDrawing.denormalized(initialDrawing, toSide: newSide)
         }
@@ -80,9 +82,23 @@ final class SignatureCanvasController {
         canvasView.undoManager?.undo()
     }
 
-    /// 保存するサインのデータ（保存する座標に直したもの）
-    func signatureData() -> Data {
+    /// 保存するサインのデータ（保存する座標に直したもの）。線が 1 本も無ければ `nil`（サインを消す）
+    func signatureData() -> Data? {
+        guard !canvasView.drawing.strokes.isEmpty else {
+            return nil
+        }
         let drawing = side.map { SignatureDrawing.normalized(canvasView.drawing, fromSide: $0) } ?? canvasView.drawing
         return drawing.dataRepresentation()
+    }
+}
+
+/// サインを描く `PKCanvasView`。取り消しの記録をこのキャンバスだけで持つ。
+/// `PKCanvasView` は既定ではウインドウの `UndoManager` に記録するので、画面を閉じても記録が残り、
+/// 開き直したときに「もどる！」が前の画面の記録から戻してしまう
+final class SignatureCanvasView: PKCanvasView {
+    private let signatureUndoManager = UndoManager()
+
+    override var undoManager: UndoManager? {
+        signatureUndoManager
     }
 }
