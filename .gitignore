@@ -89,6 +89,19 @@ fastlane/test_output
 
 iOSInjectionProject/
 
+# このリポジトリ固有
+#
+# CI のワークフローをローカルで再現したときに生成されるもの。
+# 特に private_keys/ は App Store Connect API の秘密鍵なので必ず除外する。
+ExportOptions.plist
+private_keys/
+*.xcarchive
+*.xcresult
+*.ipa/
+
+# macOS
+.DS_Store
+
 # カバレッジ計測のファイル。カバレッジ付きのビルドを実行した場所に書き出される
 # （ralph-loop の制御用 worktree に残ると、起動スクリプトが worktree を片付けられない）
 *.profraw

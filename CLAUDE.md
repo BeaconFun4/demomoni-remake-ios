@@ -5,19 +5,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-xcodebuild -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
+# Simulator は名前ではなく UDID で指定する（xcrun simctl list devices available で調べる）
+# -derivedDataPath はリポジトリの外に、checkout（ループのスロットや worktree）ごとに分けて置く
+DD="../$(basename "$PWD")-DerivedData"
+DEST='platform=iOS Simulator,id=<UDID>'
+
+# ビルド
+xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination "$DEST" \
+  -derivedDataPath "$DD" -skipPackagePluginValidation -skipMacroValidation
+
+# テスト（Unit + UI）。Unit だけなら -only-testing:demomoni-remake-iosTests を足す
+xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination "$DEST" \
+  -derivedDataPath "$DD" -parallel-testing-enabled NO -skipPackagePluginValidation -skipMacroValidation
+
+# macOS（ネイティブ）のビルド。CI では確かめていないので、手元で確かめる
+xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination 'platform=macOS' \
+  -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -skipMacroValidation
+
+# SwiftLint（CI と同じく --strict。ビルドか -resolvePackageDependencies の後に、SPM が解決したバイナリを使う）
+"$(find "$DD/SourcePackages/artifacts" -type f -name swiftlint -path '*macos*' | head -1)" lint --strict
 ```
 
-- `.xcodeproj` は git 管理下（XcodeGen は使わない）。ファイルの登録は明示的な参照（objectVersion 56）なので、
-  Swift ファイルを追加・削除・移動したら `project.pbxproj` の PBXFileReference / PBXBuildFile / PBXGroup / Sources を合わせて直し、ビルドで確かめる
-- テストターゲットはまだ無い。ロジックを足すときは、テストターゲットを追加してから `test` を検証コマンドに加える
-- SwiftLint は導入していない
+- 構成は [template-app-ios](https://github.com/shilokuma-inc/template-app-ios) と同じ。ターゲット名（`demomoni-remake-ios`）だけは元のまま残している
+  （Swift のモジュール名は `demomoni_remake_ios`。テストでは `@testable import demomoni_remake_ios`）
+- プロジェクトはフォルダ同期グループ（objectVersion 77）。ファイルの追加・削除・移動で `project.pbxproj` は変わらないので、pbxproj を手で直さない
+- 署名情報・Bundle ID・バージョン・Deployment Target は `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
+- Swift 6 言語モード・Strict Concurrency（complete）。既定の分離は MainActor（UI テストのターゲットだけ nonisolated）
+- SwiftLint は Build Tool Plugin（SwiftLintPlugins）で全ターゲットに効く。ルールは `.swiftlint.yml`。
+  手元の `xcodebuild` は `-skipPackagePluginValidation` を付けないと、プラグインの確認で止まることがある
+- テストは `demomoni-remake-iosTests`（Swift Testing）と `demomoni-remake-iosUITests`（XCTest）。
+  `LaunchTests` は外観と向きの組み合わせごとに起動するので、UI テストの後の Simulator が横向き・ダークのまま残ることがある
 
 ## アーキテクチャ
 
 「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。現状は画面の雛形だけ。
 
-- SwiftUI。iOS 17.4+、iPhone / iPad
+- SwiftUI。iOS 17.4+（iPhone / iPad）と macOS 14.3+（ネイティブ。Xcode 15 の Multiplatform テンプレートで作られたため）
+- エントリポイントは `DemomoniApp`
 - `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目）
   - `Riddle/RiddleView` … なぞなぞ
   - `Search/SearchView` … さがす
@@ -69,5 +93,5 @@ GitHub Actions の Build は無い。ループではローカルの検証（下�
 ```
 <!-- ralph-kit:snippet end -->
 
-ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は上の Commands の build（テストターゲットを足したら test も）。
+ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は、上の Commands の SwiftLint・test（Unit + UI）・macOS の build。
 Simulator は `xcrun simctl list devices available` で UDID を調べて `id=` で指定し、`-derivedDataPath` はスロットごとにリポジトリの外へ分ける。

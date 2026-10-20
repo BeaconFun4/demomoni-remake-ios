@@ -1,6 +1,21 @@
 # サービス名: でももに！
 ※ SwiftUI リメイク版
 
+## 開発環境
+
+- Xcode 26.6
+- iOS 17.4 以上（iPhone / iPad）・macOS 14.3 以上
+- Swift 6（Swift 6 言語モード / Strict Concurrency）
+- SwiftUI / Swift Testing / XCTest（UI テスト）
+- SwiftLint 0.65.1（Build Tool Plugin。バイナリだけを配布する [SwiftLintPlugins](https://github.com/SimplyDanny/SwiftLintPlugins) 経由）
+
+構成は [template-app-ios](https://github.com/shilokuma-inc/template-app-ios) にそろえています。
+
+- 署名情報・Bundle ID・バージョン・Deployment Target は [Configs/Project.xcconfig](Configs/Project.xcconfig) に集約しています（pbxproj には直接書かない）
+- プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
+- SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
+- ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
+
 ### 卍Github運用について✒卍
 
 ##### 卍リポジトリ卍

@@ -9,15 +9,15 @@ import SwiftUI
 
 struct ContentView: View {
     @State var selection = 2
-    
+
     var body: some View {
         TabView(selection: $selection) {
             RiddleView()
                 .tag(1)
-            
+
             SearchView()
                 .tag(2)
-            
+
             PieceListView()
                 .tag(3)
         }

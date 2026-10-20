@@ -1,0 +1,22 @@
+//
+//  Project.xcconfig
+//  demomoni-remake-ios
+//
+//  プロジェクト共通のビルド設定（template-app-ios と同じ構成）。
+//  署名情報・Bundle Identifier・バージョン・Deployment Target は pbxproj 側に直接書かず、ここだけを編集する。
+//
+
+// Apple Developer Program の Team ID
+DEVELOPMENT_TEAM = XU74X3434S
+
+// アプリ本体の Bundle Identifier。
+// テストターゲットは $(APP_BUNDLE_IDENTIFIER).Tests / .UITests として派生させる
+APP_BUNDLE_IDENTIFIER = ml.mrs1669.demomoni-remake-ios
+
+// バージョン（CFBundleShortVersionString / CFBundleVersion）
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1
+
+// 最低サポート OS（アプリは iOS と macOS のネイティブの両方に対応している）
+IPHONEOS_DEPLOYMENT_TARGET = 17.4
+MACOSX_DEPLOYMENT_TARGET = 14.3
