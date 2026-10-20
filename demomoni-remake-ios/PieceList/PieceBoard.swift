@@ -10,6 +10,8 @@ import SwiftUI
 struct PieceBoard: View {
     /// 獲得したピース
     let pieces: [Piece]
+    /// ピースの id ごとのサインのデータ。サインのあるピースはサインを重ねて出す
+    var signatures: [Int: Data] = [:]
 
     var body: some View {
         ZStack {
@@ -30,8 +32,7 @@ struct PieceBoard: View {
                     if let number = piece.number,
                        let frame = PieceBoardLayout.pieceImageFrame(number: number, in: proxy.size) {
                         NavigationLink(value: piece) {
-                            Image(piece.image)
-                                .resizable()
+                            PieceWithSignature(piece: piece, signature: signatures[piece.id])
                         }
                         .buttonStyle(.plain)
                         .frame(width: frame.width, height: frame.height)
