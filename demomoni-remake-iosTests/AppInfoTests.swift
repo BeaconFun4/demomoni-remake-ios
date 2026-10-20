@@ -55,6 +55,7 @@ struct AppInfoTests {
     @Test
     func doesNotRequestBackgroundLocation() {
         #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysAndWhenInUseUsageDescription") == nil)
+        #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysUsageDescription") == nil)
         #expect(Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") == nil)
     }
 }
