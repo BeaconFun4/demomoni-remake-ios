@@ -50,7 +50,14 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 
 ## CI
 
-GitHub Actions の Build は無い。ループではローカルの検証（下記の `{{VERIFY_COMMANDS}}`）が CI の代わりになる。
+GitHub Actions の Build（`.github/workflows/build.yml` → `_build.yml`。template-app-ios と同じ）が、SwiftLint（`--strict`）・ビルド・テストを実行する。
+Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simulator だけで確かめる（macOS のビルドは CI に無いので、ループの検証で確かめる）。
+
+- 作業ブランチへの push は Unit テストだけ。PR の作成時と `develop` / `main` / `release/**` への push は UI テストも実行する
+- ループの子 PR（`epic/**` 宛て）では PR のイベントで実行しない（push の Unit テストで確かめる）。最終 PR（`epic/**` → `develop`）は更新のたびに UI テストまで実行する
+- ドキュメントだけの変更（`**/*.md`・`docs/**`）では実行しない
+- Archive / Upload（App Store Connect への配信）のワークフローは無い（Secrets が未登録）
+
 `.github/workflows/close-goal-discussion.yml` は epic の最終 PR のマージでゴール元の Discussion を閉じるだけ。
 
 ## ブランチ運用
