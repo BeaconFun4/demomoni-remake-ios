@@ -33,4 +33,13 @@ struct LaunchOptionsTests {
         #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID"]).fakeBeaconID == nil)
         #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID", "one"]).fakeBeaconID == nil)
     }
+
+    /// `-uiTesting` と Unit テストのホストでは、実際の位置情報を使わない
+    @Test
+    func disablesLocationServicesWhileTesting() {
+        #expect(LaunchOptions(arguments: ["app"]).usesLocationServices)
+        #expect(!LaunchOptions(arguments: ["app", "-uiTesting"]).usesLocationServices)
+        let unitTestHost = ["XCTestConfigurationFilePath": "/tmp/x.xctestconfiguration"]
+        #expect(!LaunchOptions(arguments: ["app"], environment: unitTestHost).usesLocationServices)
+    }
 }

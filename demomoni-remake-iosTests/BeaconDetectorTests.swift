@@ -261,6 +261,17 @@ struct BeaconDetectorTests {
         #expect(!BeaconDetector.live(options: LaunchOptions(), catalog: catalog).usesFakeScanner)
     }
 
+    /// テストでは実際の位置情報を使わず、何も見つけない擬似検知にする
+    @Test
+    func liveDetectorDoesNotUseLocationServicesWhileTesting() async throws {
+        let detector = BeaconDetector.live(options: LaunchOptions(usesLocationServices: false), catalog: catalog)
+        #expect(detector.usesFakeScanner)
+
+        detector.start()
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(detector.detectedPiece == nil)
+    }
+
     /// CoreLocation の許可の状態を、画面で使う許可の状態に直す
     @Test
     func mapsAuthorizationStatus() {
