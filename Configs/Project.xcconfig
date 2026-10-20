@@ -19,3 +19,9 @@ CURRENT_PROJECT_VERSION = 1
 
 // 最低サポート OS（iPhone / iPad。Liquid Glass の API を分岐なしで使うため iOS 26 以上）
 IPHONEOS_DEPLOYMENT_TARGET = 26.0
+
+// ホーム画面に出すアプリ名（元アプリの CFBundleName と同じ）
+INFOPLIST_KEY_CFBundleDisplayName = でももに！
+
+// 位置情報（使用中の許可）の利用目的。さがすタブで近くの iBeacon を見つけるために使う
+INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = 近くのビーコンを見つけて、ピースをゲットするために使います
