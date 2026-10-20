@@ -17,6 +17,8 @@ struct DemomoniApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // 元アプリの色と画像は白地の前提（Color Set もライト・ダークで同じ値）なので、ライトに固定する
+                .preferredColorScheme(.light)
         }
     }
 }
