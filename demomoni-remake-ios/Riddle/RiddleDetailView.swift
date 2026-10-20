@@ -39,6 +39,8 @@ struct RiddleDetailView: View {
                     .buttonStyle(.glassProminent)
                     .controlSize(.large)
                     .tint(.themeColorPink)
+                    // 白い文字ではピンクとのコントラストが足りない（約 2.4:1）ので、元アプリのグレーにする（約 3.6:1）
+                    .foregroundStyle(Color.themeColorGray)
                 }
             }
             .padding()

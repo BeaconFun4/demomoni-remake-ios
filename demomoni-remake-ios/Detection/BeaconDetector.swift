@@ -100,10 +100,14 @@ final class BeaconDetector {
 }
 
 extension BeaconDetector {
-    /// アプリで使う検知。起動引数 `-fakeBeaconID <id>` があれば擬似検知、無ければ CoreLocation で探す
+    /// アプリで使う検知。起動引数 `-fakeBeaconID <id>` があれば擬似検知、
+    /// テスト（`-uiTesting`・Unit テストのホスト）なら何も見つけない擬似検知、それ以外は CoreLocation で探す
     static func live(options: LaunchOptions, catalog: Catalog) -> BeaconDetector {
         if let id = options.fakeBeaconID, let beacon = catalog.beacons.first(where: { $0.beaconId == id }) {
             return BeaconDetector(catalog: catalog, scanner: FakeBeaconScanner(beacon: DetectedBeacon(beacon)))
+        }
+        guard options.usesLocationServices else {
+            return BeaconDetector(catalog: catalog, scanner: FakeBeaconScanner(beacon: nil))
         }
         return BeaconDetector(catalog: catalog, scanner: CoreLocationBeaconScanner())
     }
