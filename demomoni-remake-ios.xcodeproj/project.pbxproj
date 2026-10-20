@@ -6,8 +6,27 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		4FC9E1FA2BF1049C00F630AB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4FC9E1E12BF1049B00F630AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4FDD2E492BE3BA0F00B91618;
+			remoteInfo = "demomoni-remake-ios";
+		};
+		4FC9E2042BF1049C00F630AB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4FC9E1E12BF1049B00F630AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4FDD2E492BE3BA0F00B91618;
+			remoteInfo = "demomoni-remake-ios";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		4FC9E1E92BF1049B00F630AB /* demomoni-remake-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "demomoni-remake-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FC9E1F92BF1049C00F630AB /* demomoni-remake-iosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "demomoni-remake-iosTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FC9E2032BF1049C00F630AB /* demomoni-remake-iosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "demomoni-remake-iosUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FA0000000000000000000C1 /* Project.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Project.xcconfig; sourceTree = "<group>"; };
 		4FA0000000000000000000C2 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		4FA0000000000000000000C3 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
@@ -19,10 +38,34 @@
 			path = "demomoni-remake-ios";
 			sourceTree = "<group>";
 		};
+		4FA0000000000000000000B2 /* demomoni-remake-iosTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "demomoni-remake-iosTests";
+			sourceTree = "<group>";
+		};
+		4FA0000000000000000000B3 /* demomoni-remake-iosUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "demomoni-remake-iosUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		4FC9E1E62BF1049B00F630AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FC9E1F62BF1049C00F630AB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FC9E2002BF1049C00F630AB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -36,6 +79,8 @@
 			isa = PBXGroup;
 			children = (
 				4FA0000000000000000000B1 /* demomoni-remake-ios */,
+				4FA0000000000000000000B2 /* demomoni-remake-iosTests */,
+				4FA0000000000000000000B3 /* demomoni-remake-iosUITests */,
 				4FC9E1EA2BF1049B00F630AB /* Products */,
 				4FA0000000000000000000C0 /* Configs */,
 			);
@@ -45,6 +90,8 @@
 			isa = PBXGroup;
 			children = (
 				4FC9E1E92BF1049B00F630AB /* demomoni-remake-ios.app */,
+				4FC9E1F92BF1049C00F630AB /* demomoni-remake-iosTests.xctest */,
+				4FC9E2032BF1049C00F630AB /* demomoni-remake-iosUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -83,6 +130,50 @@
 			productReference = 4FC9E1E92BF1049B00F630AB /* demomoni-remake-ios.app */;
 			productType = "com.apple.product-type.application";
 		};
+		4FC9E1F82BF1049C00F630AB /* demomoni-remake-iosTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4FC9E2102BF1049C00F630AB /* Build configuration list for PBXNativeTarget "demomoni-remake-iosTests" */;
+			buildPhases = (
+				4FC9E1F52BF1049C00F630AB /* Sources */,
+				4FC9E1F62BF1049C00F630AB /* Frameworks */,
+				4FC9E1F72BF1049C00F630AB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4FC9E1FB2BF1049C00F630AB /* PBXTargetDependency */,
+				4FA0000000000000000000D1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4FA0000000000000000000B2 /* demomoni-remake-iosTests */,
+			);
+			name = "demomoni-remake-iosTests";
+			productName = "demomoni-remake-iosTests";
+			productReference = 4FC9E1F92BF1049C00F630AB /* demomoni-remake-iosTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		4FC9E2022BF1049C00F630AB /* demomoni-remake-iosUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4FC9E2132BF1049C00F630AB /* Build configuration list for PBXNativeTarget "demomoni-remake-iosUITests" */;
+			buildPhases = (
+				4FC9E1FF2BF1049C00F630AB /* Sources */,
+				4FC9E2002BF1049C00F630AB /* Frameworks */,
+				4FC9E2012BF1049C00F630AB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4FC9E2052BF1049C00F630AB /* PBXTargetDependency */,
+				4FA0000000000000000000E1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				4FA0000000000000000000B3 /* demomoni-remake-iosUITests */,
+			);
+			name = "demomoni-remake-iosUITests";
+			productName = "demomoni-remake-iosUITests";
+			productReference = 4FC9E2032BF1049C00F630AB /* demomoni-remake-iosUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -95,6 +186,14 @@
 				TargetAttributes = {
 					4FDD2E492BE3BA0F00B91618 = {
 						CreatedOnToolsVersion = 15.3;
+					};
+					4FC9E1F82BF1049C00F630AB = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = 4FDD2E492BE3BA0F00B91618;
+					};
+					4FC9E2022BF1049C00F630AB = {
+						CreatedOnToolsVersion = 15.3;
+						TestTargetID = 4FDD2E492BE3BA0F00B91618;
 					};
 				};
 			};
@@ -116,12 +215,28 @@
 			projectRoot = "";
 			targets = (
 				4FDD2E492BE3BA0F00B91618 /* demomoni-remake-ios */,
+				4FC9E1F82BF1049C00F630AB /* demomoni-remake-iosTests */,
+				4FC9E2022BF1049C00F630AB /* demomoni-remake-iosUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		4FC9E1E72BF1049B00F630AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FC9E1F72BF1049C00F630AB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FC9E2012BF1049C00F630AB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -138,12 +253,44 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		4FC9E1F52BF1049C00F630AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FC9E1FF2BF1049C00F630AB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		4F27869F2BF3744F00E9F5EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			productRef = 4F27869E2BF3744F00E9F5EF /* SwiftLintBuildToolPlugin */;
+		};
+		4FC9E1FB2BF1049C00F630AB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4FDD2E492BE3BA0F00B91618 /* demomoni-remake-ios */;
+			targetProxy = 4FC9E1FA2BF1049C00F630AB /* PBXContainerItemProxy */;
+		};
+		4FC9E2052BF1049C00F630AB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4FDD2E492BE3BA0F00B91618 /* demomoni-remake-ios */;
+			targetProxy = 4FC9E2042BF1049C00F630AB /* PBXContainerItemProxy */;
+		};
+		4FA0000000000000000000D1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 4FA0000000000000000000D2 /* SwiftLintBuildToolPlugin */;
+		};
+		4FA0000000000000000000E1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 4FA0000000000000000000E2 /* SwiftLintBuildToolPlugin */;
 		};
 /* End PBXTargetDependency section */
 
@@ -349,6 +496,66 @@
 			};
 			name = Release;
 		};
+		4FC9E2112BF1049C00F630AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).Tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/demomoni-remake-ios.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/demomoni-remake-ios";
+			};
+			name = Debug;
+		};
+		4FC9E2122BF1049C00F630AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).Tests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/demomoni-remake-ios.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/demomoni-remake-ios";
+			};
+			name = Release;
+		};
+		4FC9E2142BF1049C00F630AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "demomoni-remake-ios";
+			};
+			name = Debug;
+		};
+		4FC9E2152BF1049C00F630AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER).UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "demomoni-remake-ios";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -370,6 +577,24 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		4FC9E2102BF1049C00F630AB /* Build configuration list for PBXNativeTarget "demomoni-remake-iosTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4FC9E2112BF1049C00F630AB /* Debug */,
+				4FC9E2122BF1049C00F630AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4FC9E2132BF1049C00F630AB /* Build configuration list for PBXNativeTarget "demomoni-remake-iosUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4FC9E2142BF1049C00F630AB /* Debug */,
+				4FC9E2152BF1049C00F630AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -385,6 +610,16 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		4F27869E2BF3744F00E9F5EF /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F27869D2BF373B800E9F5EF /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+		4FA0000000000000000000D2 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F27869D2BF373B800E9F5EF /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
+			productName = "plugin:SwiftLintBuildToolPlugin";
+		};
+		4FA0000000000000000000E2 /* SwiftLintBuildToolPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4F27869D2BF373B800E9F5EF /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
 			productName = "plugin:SwiftLintBuildToolPlugin";
