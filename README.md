@@ -16,6 +16,24 @@
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
 - ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
 
+## CI
+
+GitHub Actions の Build（[.github/workflows/build.yml](.github/workflows/build.yml)）で、SwiftLint（`--strict`）・ビルド・テストを実行します。
+
+| きっかけ | Build（ビルド + テスト + SwiftLint） |
+|---|:-:|
+| `main` / `develop` / `release/**` への push | ✅（UI テストも） |
+| その他の作業ブランチへの push | ✅（Unit テストのみ） |
+| Pull Request の作成時（opened / reopened / ready_for_review） | ✅（UI テストも） |
+| `epic/**` 宛ての Pull Request（ralph-loop の子 PR） | （push の Unit テストで確かめる） |
+| `epic/**` から `develop` などへの Pull Request（ralph-loop の最終 PR） | ✅（更新のたびに UI テストも） |
+| Fork からの Pull Request | ✅（UI テストも） |
+
+- ドキュメントだけの変更（`**/*.md`、`docs/**`）では実行しません
+- Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
+- 確かめるのは iOS の Simulator だけです。macOS のビルドは手元で確かめます
+- Archive / Upload（App Store Connect への配信）のワークフローはまだありません
+
 ### 卍Github運用について✒卍
 
 ##### 卍リポジトリ卍
