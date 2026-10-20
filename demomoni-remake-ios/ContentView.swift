@@ -21,6 +21,8 @@ struct ContentView: View {
             PieceListView()
                 .tag(3)
         }
+        // タブの選択色は元アプリのピンク
+        .tint(.themeColorPink)
     }
 }
 
