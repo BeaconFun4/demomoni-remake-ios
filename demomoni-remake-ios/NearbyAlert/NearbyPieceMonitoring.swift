@@ -44,6 +44,8 @@ nonisolated enum NearbyPieceMonitoring {
     static let conditionLimit = 20
     /// 通知の `userInfo` のピースの id のキー
     static let pieceIDKey = "pieceID"
+    /// 近くのピースの通知の identifier の頭（続けてピースの id）
+    static let notificationIdentifierPrefix = "piece-"
 
     /// ビーコン 1 台の条件の identifier。UUID・major・minor を入れる
     /// （CLMonitor の条件はアプリを終えても残るので、同梱データの値が変わったら別の条件として足し直すため）
@@ -114,10 +116,18 @@ nonisolated enum NearbyPieceMonitoring {
         return piece
     }
 
+    /// 近くのピースの通知（`notification(for:)`）の identifier と `userInfo` から、ピースの id を読む。近くのピースの通知でなければ `nil`
+    static func pieceID(fromNotificationIdentifier identifier: String, userInfo: [AnyHashable: Any]) -> Int? {
+        guard identifier.hasPrefix(notificationIdentifierPrefix) else {
+            return nil
+        }
+        return userInfo[pieceIDKey] as? Int ?? Int(identifier.dropFirst(notificationIdentifierPrefix.count))
+    }
+
     /// ピースを知らせる通知の中身
     static func notification(for piece: Piece) -> PieceNotificationContent {
         PieceNotificationContent(
-            identifier: "piece-\(piece.id)",
+            identifier: "\(notificationIdentifierPrefix)\(piece.id)",
             title: "近くにピースがあるよ！",
             body: "さがすタブをひらいて、ピースをゲットしよう",
             pieceID: piece.id

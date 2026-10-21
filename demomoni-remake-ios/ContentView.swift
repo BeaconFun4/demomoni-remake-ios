@@ -5,33 +5,33 @@
 //  Created by 村石 拓海 on 2024/05/02.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ContentView: View {
-    /// さがすタブの tag
-    static let searchTab = 2
-
-    @State var selection = searchTab
+    /// 表示しているタブ。通知を開いたとき・デバッグモードの擬似検知で外から切り替える
+    @Environment(TabSelection.self) private var tabSelection
 
     var body: some View {
-        TabView(selection: $selection) {
+        @Bindable var tabSelection = tabSelection
+        TabView(selection: $tabSelection.selected) {
             RiddleView()
-                .tag(1)
+                .tag(AppTab.riddle)
 
             SearchView()
-                .tag(Self.searchTab)
+                .tag(AppTab.search)
 
             PieceListView()
-                .tag(3)
+                .tag(AppTab.pieceList)
 
             SettingsView()
-                .tag(4)
+                .tag(AppTab.settings)
         }
         // タブの選択色は元アプリのピンク
         .tint(.themeColorPink)
         #if DEBUG
         // デバッグモードの擬似検知で、さがすタブに切り替える
-        .environment(\.showSearchTab, ShowSearchTabAction { selection = Self.searchTab })
+        .environment(\.showSearchTab, ShowSearchTabAction { tabSelection.selected = .search })
         #endif
     }
 }
@@ -53,5 +53,12 @@ extension EnvironmentValues {
 #endif
 
 #Preview {
+    let options = LaunchOptions(usesLocationServices: false)
+    // swiftlint:disable:next force_try
+    let container = try! ModelContainer.demomoni(inMemory: true)
     ContentView()
+        .environment(TabSelection())
+        .environment(BeaconDetector.live(options: options, catalog: .bundled))
+        .environment(NearbyPieceAlerts.live(options: options, catalog: .bundled, container: container))
+        .modelContainer(container)
 }
