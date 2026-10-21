@@ -7,14 +7,16 @@
 //
 //  - 背景（水色）は画像にせず、.icon の icon.json の塗り（fill）で表す。塗りの色は実行したときに表示する
 //  - piece.png … パズルのピース（赤い面と線）。キャラクターに隠れている部分は、見えている 4 辺を延ばした
-//    ひし形（pieceCorners）で推測し、ピースの赤で塗る（キャラクターの下だけに描き足すので、重ねたときの見た目は変わらない）
+//    ひし形（pieceCorners）と見えているピースを囲む凸包で推測し、ピースの赤で塗る
+//    （キャラクターの下だけに描き足すので、重ねたときの見た目は変わらない）
 //  - character.png … キャラクター（白い体・顔・腕・黄色い枠のカード・それらの線）
 //
 //  切り分け方:
 //  1. 画像の縁から、背景の色に近い画素を塗りつぶして背景を決める。残りが前景（ピースとキャラクター）
 //  2. 画像の縁から、明るい画素（白・灰色・黄色）以外を塗りつぶす。届かなかった画素がキャラクターの面（線に囲まれた内側）
 //  3. キャラクターの面から outlineReach 画素以内の、背景・ピースの赤でない前景の画素（キャラクターの線）をキャラクターに足す
-//  4. 前景のうちキャラクターでない画素がピース。ひし形の内側でキャラクターに隠れた画素を赤で塗る
+//  4. 前景のうちキャラクターでない画素がピース。ひし形と見えているピースの凸包の内側で、キャラクターに隠れた画素を赤で塗る
+//     （凸包にするのは、左下の出っ張りの付け根のように、ひし形の外でキャラクターに隠れた部分も塗るため）
 //
 //  最後に、塗りの色の上に piece.png・character.png を重ね直し、元の絵との差を表示する（背景の汚れのほかに大きく違う画素があれば止まる）。
 //  `--composite <パス>` を付けると、重ね直した画像をそのパスに書き出す（確かめ用。コミットしない）。
@@ -23,6 +25,16 @@
 //
 
 import AppKit
+
+let arguments = CommandLine.arguments
+var compositePath: String?
+if let index = arguments.firstIndex(of: "--composite") {
+    guard index + 1 < arguments.count else {
+        fputs("使い方: swift scripts/make-app-icon-layers.swift [--composite <書き出すパス>]\n", stderr)
+        exit(1)
+    }
+    compositePath = arguments[index + 1]
+}
 
 let sourcePath = "demomoni-remake-ios/Assets.xcassets/AppIcon.appiconset/demomoni-AppIcon.png"
 let outputDirectory = "docs/app-icon/layers"
@@ -183,6 +195,27 @@ func components(of mask: [Bool]) -> [[Int]] {
     return result
 }
 
+/// 点を囲む凸包（Andrew の monotone chain。時計回りか反時計回りの頂点の並び）
+func convexHull(_ points: [CGPoint]) -> [CGPoint] {
+    let sorted = points.sorted { ($0.x, $0.y) < ($1.x, $1.y) }
+    func cross(_ origin: CGPoint, _ first: CGPoint, _ second: CGPoint) -> CGFloat {
+        (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x)
+    }
+    func chain(_ points: [CGPoint]) -> [CGPoint] {
+        var result: [CGPoint] = []
+        for point in points {
+            while result.count >= 2 && cross(result[result.count - 2], result[result.count - 1], point) <= 0 {
+                result.removeLast()
+            }
+            result.append(point)
+        }
+        return result
+    }
+    let lower = chain(sorted)
+    let upper = chain(sorted.reversed())
+    return Array(lower.dropLast() + upper.dropLast())
+}
+
 /// 多角形の内側か（偶奇規則）
 func contains(_ polygon: [CGPoint], _ point: CGPoint) -> Bool {
     var inside = false
@@ -207,13 +240,14 @@ let isPieceColor = (0..<count).map { source.rgb($0).difference(pieceColor) < col
 
 // 1. 背景と前景
 var isForeground = floodFromEdges(isBackgroundColor).map { !$0 }
-var speckPixels = 0
+var isSpeck = [Bool](repeating: false, count: count)
 for component in components(of: isForeground) where component.count < speckArea {
-    speckPixels += component.count
     for index in component {
         isForeground[index] = false
+        isSpeck[index] = true
     }
 }
+let speckPixels = isSpeck.filter { $0 }.count
 
 // 2. キャラクターの面（白・灰色・黄色の明るい画素に囲まれた内側）
 let isLight = (0..<count).map { index in
@@ -249,7 +283,14 @@ while head < queue.count {
     }
 }
 
-// 4. 層の画像
+// 4. 層の画像。描き足す範囲は、ひし形の 4 隅と見えているピースの画素の角を囲む凸包
+var hullPoints = pieceCorners
+for index in 0..<count where isForeground[index] && !isCharacter[index] {
+    let x = CGFloat(index % size)
+    let y = CGFloat(index / size)
+    hullPoints += [CGPoint(x: x, y: y), CGPoint(x: x + 1, y: y), CGPoint(x: x, y: y + 1), CGPoint(x: x + 1, y: y + 1)]
+}
+let pieceOutline = convexHull(hullPoints)
 var piece = Bitmap(width: size, height: size)
 var character = Bitmap(width: size, height: size)
 var filledPixels = 0
@@ -258,7 +299,7 @@ for index in 0..<count where isForeground[index] {
     if isCharacter[index] {
         character.set(index, color)
         let point = CGPoint(x: Double(index % size) + 0.5, y: Double(index / size) + 0.5)
-        if contains(pieceCorners, point) {
+        if contains(pieceOutline, point) {
             piece.set(index, pieceColor)
             filledPixels += 1
         }
@@ -283,7 +324,9 @@ print(String(
 
 // 5. 塗りの上に piece → character の順で重ね直し、元の絵と比べる（層は不透明か透明の 2 値なので、上の層の画素で置き換える）
 var composite = Bitmap(width: size, height: size)
-var differences: [Int] = []
+var changed = 0
+/// 色の差（RGB の差の絶対値の和）が colorTolerance 以上で、背景の汚れとして消した画素でないもの
+var unexpected = 0
 for index in 0..<count {
     let color: RGB
     if character.pixels[index * 4 + 3] > 0 {
@@ -295,17 +338,21 @@ for index in 0..<count {
     }
     composite.set(index, color)
     let original = source.rgb(index)
-    differences.append(max(abs(color.red - original.red), abs(color.green - original.green), abs(color.blue - original.blue)))
+    let difference = color.difference(original)
+    if difference > 0 {
+        changed += 1
+    }
+    if difference >= colorTolerance && !isSpeck[index] {
+        unexpected += 1
+    }
 }
-let changed = differences.filter { $0 > 0 }.count
-let large = differences.filter { $0 > colorTolerance }.count
-print("重ね直した絵と元の絵の差: 違う画素 \(changed) / \(count)・差が \(colorTolerance) を超える画素 \(large)（背景の汚れとして消した画素 \(speckPixels)）")
-if let index = CommandLine.arguments.firstIndex(of: "--composite"), index + 1 < CommandLine.arguments.count {
-    composite.writePNG(to: CommandLine.arguments[index + 1])
-    print("wrote: \(CommandLine.arguments[index + 1])（重ね直した絵）")
+print("重ね直した絵と元の絵の差: 違う画素 \(changed) / \(count)・背景の汚れ（\(speckPixels) 画素）のほかに色の差が \(colorTolerance) 以上の画素 \(unexpected)")
+if let compositePath {
+    composite.writePNG(to: compositePath)
+    print("wrote: \(compositePath)（重ね直した絵）")
 }
 // 大きく違ってよいのは、背景の汚れとして消した画素だけ
-if large > speckPixels {
+if unexpected > 0 {
     fputs("重ね直した絵が元の絵と大きく違う\n", stderr)
     exit(1)
 }
