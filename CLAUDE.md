@@ -50,7 +50,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 
 - `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。ビーコンとピースは 32 件（函館 24・大沼 4・北斗 4。ビーコンは仮の値で minor = 5000 + id × 1000）、なぞなぞは 2 件）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
 - ピースの画像（`Assets.xcassets/Pieces/`）は盤の 32 マスぶん（`piece1`〜`piece32`。400 × 400 の中央の 200 × 200 がマス）。`piece1`・`piece14` は元アプリのもの、残りの 30 枚は `scripts/make-piece-images.swift` で `goryokaku_long` を `PieceAllBorder` の形に切り出したもの（既にある画像は上書きしない）
-- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込みは `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
+- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込み（獲得・サイン・1 ピースを外す・全部消す）は `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
 - `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`
 - サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
 - 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない

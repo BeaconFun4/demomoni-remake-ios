@@ -86,6 +86,72 @@ struct PieceCollectionTests {
         #expect(try !collection.isCollected(pieceID: 0))
     }
 
+    /// ピースを外すと獲得していない状態に戻り、ほかのピースは残る
+    @Test
+    func removeDeletesOnlyThatPiece() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.saveSignature(Data([1]), pieceID: 0)
+        try collection.collect(pieceID: 1, at: firstDate)
+
+        #expect(try collection.remove(pieceID: 0))
+        #expect(try !collection.isCollected(pieceID: 0))
+        #expect(try collection.record(pieceID: 0) == nil)
+        #expect(try collection.collectedPieceIDs() == [1])
+    }
+
+    /// 獲得していないピースを外しても何もしない
+    @Test
+    func removeIgnoresUncollectedPiece() throws {
+        try collection.collect(pieceID: 1, at: firstDate)
+        #expect(try !collection.remove(pieceID: 0))
+        #expect(try collection.collectedPieceIDs() == [1])
+    }
+
+    /// 外したピースをもう一度獲得すると、新しい日時でサインの無い記録になる
+    @Test
+    func collectAfterRemoveStartsNewRecord() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.saveSignature(Data([1]), pieceID: 0)
+        try collection.remove(pieceID: 0)
+
+        #expect(try collection.collect(pieceID: 0, at: laterDate))
+        let record = try #require(try collection.record(pieceID: 0))
+        #expect(record.collectedAt == laterDate)
+        #expect(record.signature == nil)
+    }
+
+    /// 全部消すと、どのピースも獲得していない状態に戻り、消した件数を返す
+    @Test
+    func removeAllDeletesEveryRecord() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.collect(pieceID: 1, at: laterDate)
+        try collection.saveSignature(Data([1]), pieceID: 1)
+
+        #expect(try collection.removeAll() == 2)
+        #expect(try collection.collectedPieceIDs().isEmpty)
+        #expect(try container.mainContext.fetch(FetchDescriptor<CollectedPiece>()).isEmpty)
+    }
+
+    /// 獲得していなければ、全部消しても 0 件
+    @Test
+    func removeAllOnEmptyStoreDoesNothing() throws {
+        #expect(try collection.removeAll() == 0)
+    }
+
+    /// 外した・全部消した結果は、同じストアの別の `ModelContext` からも見える
+    @Test
+    func removalIsVisibleFromAnotherContext() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.collect(pieceID: 1, at: firstDate)
+        let other = PieceCollection(context: ModelContext(container))
+
+        try collection.remove(pieceID: 0)
+        #expect(try other.collectedPieceIDs() == [1])
+
+        try collection.removeAll()
+        #expect(try other.collectedPieceIDs().isEmpty)
+    }
+
     /// 保存した内容は、同じストアの別の `ModelContext` からも読める
     @Test
     func savedRecordIsVisibleFromAnotherContext() throws {
