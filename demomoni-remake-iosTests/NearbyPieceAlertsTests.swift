@@ -11,7 +11,9 @@ import Testing
 /// テストから許可と出来事を決められる見張り
 private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
     let events: AsyncStream<BeaconRegionEvent>
-    var isAlwaysAuthorizedWithFullAccuracy: Bool
+    var isAlwaysAuthorized: Bool
+    var hasFullAccuracy = true
+    private(set) var alwaysAuthorizationRequests = 0
     private(set) var conditions: [MonitoredBeacon]?
     private(set) var removeAllCount = 0
     private(set) var sessions: [StubAlwaysSession] = []
@@ -19,12 +21,16 @@ private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
 
     init(isAlwaysAuthorized: Bool) {
         (events, continuation) = AsyncStream.makeStream(of: BeaconRegionEvent.self)
-        isAlwaysAuthorizedWithFullAccuracy = isAlwaysAuthorized
+        self.isAlwaysAuthorized = isAlwaysAuthorized
     }
 
     /// 終えていない session の数
     var activeSessionCount: Int {
         sessions.count { !$0.isInvalidated }
+    }
+
+    func requestAlwaysAuthorizationIfNeeded() {
+        alwaysAuthorizationRequests += 1
     }
 
     func makeAlwaysSession() -> any LocationSession {
@@ -56,6 +62,7 @@ private final class StubPieceNotifier: PieceNotifier {
     private(set) var posted: [PieceNotificationContent] = []
     /// 通知の許可を確かめたときに呼ぶ（確かめる前に何が済んでいるかを見るため）
     var onCheckAuthorization: (() -> Void)?
+    private(set) var authorizationRequests = 0
 
     init(isAllowed: Bool) {
         self.isAllowed = isAllowed
@@ -64,6 +71,10 @@ private final class StubPieceNotifier: PieceNotifier {
     func areNotificationsAllowed() async -> Bool {
         onCheckAuthorization?()
         return isAllowed
+    }
+
+    func requestAuthorization() async {
+        authorizationRequests += 1
     }
 
     func post(_ notification: PieceNotificationContent) async {
@@ -186,6 +197,62 @@ struct NearbyPieceAlertsTests {
         #expect(monitor.conditions == nil)
         #expect(monitor.removeAllCount == 1)
         #expect(monitor.activeSessionCount == 0)
+    }
+
+    /// オンにしたときだけ、通知と位置情報の「常に許可」を尋ね、許可の状態を読む。オフにしたら尋ねず、状態も持たない
+    @Test
+    func requestsPermissionsOnlyWhenTurnedOn() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let notifier = StubPieceNotifier(isAllowed: false)
+        let alerts = makeAlerts(isEnabled: false, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
+
+        alerts.preference.isEnabled = true
+        await alerts.preferenceDidChange()
+        #expect(notifier.authorizationRequests == 1)
+        #expect(monitor.alwaysAuthorizationRequests == 1)
+        #expect(alerts.permissionStatus == NearbyAlertPermissionStatus(
+            isLocationAlways: false,
+            hasFullAccuracy: true,
+            areNotificationsAllowed: false
+        ))
+        #expect(!alerts.isMonitoring)
+
+        alerts.preference.isEnabled = false
+        await alerts.preferenceDidChange()
+        #expect(notifier.authorizationRequests == 1)
+        #expect(monitor.alwaysAuthorizationRequests == 1)
+        #expect(alerts.permissionStatus == nil)
+    }
+
+    /// 起動時・アプリに戻ったときの決め直しでは許可を尋ねない。設定アプリで許可されて戻ったら見張り始める
+    @Test
+    func startsMonitoringAfterPermissionsAreGrantedInSettings() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let notifier = StubPieceNotifier(isAllowed: false)
+        let alerts = makeAlerts(isEnabled: true, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
+        await alerts.refresh()
+        #expect(!alerts.isMonitoring)
+
+        monitor.isAlwaysAuthorized = true
+        notifier.isAllowed = true
+        await alerts.refresh()
+        #expect(alerts.isMonitoring)
+        #expect(alerts.permissionStatus?.isSufficient == true)
+        #expect(notifier.authorizationRequests == 0)
+        #expect(monitor.alwaysAuthorizationRequests == 0)
+    }
+
+    /// 「常に」でも正確な位置情報がオフなら見張らない
+    @Test
+    func doesNotMonitorWithReducedAccuracy() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        monitor.hasFullAccuracy = false
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
+
+        await alerts.refresh()
+        #expect(!alerts.isMonitoring)
+        #expect(monitor.sessions.isEmpty)
+        #expect(alerts.permissionStatus?.hasFullAccuracy == false)
     }
 
     /// オフにしたら、条件をすべて外して session を終える

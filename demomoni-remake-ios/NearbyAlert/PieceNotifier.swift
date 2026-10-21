@@ -11,6 +11,8 @@ import UserNotifications
 protocol PieceNotifier: AnyObject {
     /// 通知が許可されているか
     func areNotificationsAllowed() async -> Bool
+    /// 通知の許可（`.alert`・`.sound`）を尋ねる。もう答えていれば尋ねない
+    func requestAuthorization() async
     /// 通知を出す。同じ identifier の通知があれば置き換える
     func post(_ notification: PieceNotificationContent) async
 }
@@ -27,6 +29,11 @@ final class UserNotificationPieceNotifier: PieceNotifier {
         @unknown default:
             return false
         }
+    }
+
+    func requestAuthorization() async {
+        // 断られても、せっていタブで案内するので何もしない
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
     func post(_ notification: PieceNotificationContent) async {
@@ -46,6 +53,8 @@ final class InactivePieceNotifier: PieceNotifier {
     func areNotificationsAllowed() async -> Bool {
         false
     }
+
+    func requestAuthorization() async {}
 
     func post(_ notification: PieceNotificationContent) async {}
 }

@@ -50,6 +50,7 @@ struct DemomoniApp: App {
                 // 元アプリの色と画像は白地の前提（Color Set もライト・ダークで同じ値）なので、ライトに固定する
                 .preferredColorScheme(.light)
                 .environment(beaconDetector)
+                .environment(nearbyPieceAlerts)
         }
         .modelContainer(modelContainer)
         .onChange(of: scenePhase) { _, phase in

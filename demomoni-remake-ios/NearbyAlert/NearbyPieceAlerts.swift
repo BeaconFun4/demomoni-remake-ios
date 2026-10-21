@@ -17,6 +17,8 @@ final class NearbyPieceAlerts {
     let preference: NearbyPieceAlertPreference
     /// 今、見張っているか
     private(set) var isMonitoring = false
+    /// 要る許可の状態。オンの間だけ `refresh()` で読む（オフのときは `nil`）
+    private(set) var permissionStatus: NearbyAlertPermissionStatus?
 
     @ObservationIgnored private let catalog: Catalog
     @ObservationIgnored private let container: ModelContainer
@@ -69,6 +71,16 @@ final class NearbyPieceAlerts {
         await task.value
     }
 
+    /// スイッチを切り替えたときに呼ぶ。オンにしたときだけ、通知と位置情報の「常に許可」を尋ねてから決め直す
+    /// （許可を尋ねるのはここだけ。起動時・さがすタブでは尋ねない）
+    func preferenceDidChange() async {
+        if preference.isEnabled {
+            await notifier.requestAuthorization()
+            monitor.requestAlwaysAuthorizationIfNeeded()
+        }
+        await refresh()
+    }
+
     /// `CLMonitor` の出来事を扱う。まだ獲得していないピースのビーコンの範囲に入り、アプリが前面でなければ通知を出す
     func handle(_ event: BeaconRegionEvent) async {
         guard preference.isEnabled,
@@ -85,18 +97,29 @@ final class NearbyPieceAlerts {
     }
 
     private func performRefresh() async {
+        if !preference.isEnabled {
+            permissionStatus = nil
+        }
         // オンにしたことの無い人には CLMonitor を作らない（条件も足していない）
         guard preference.isEnabled || preference.hasStoredValue || isMonitoring || session != nil else {
             return
         }
+        let isLocationAlwaysAuthorized = monitor.isAlwaysAuthorized && monitor.hasFullAccuracy
         // バックグラウンドで起こされたときは、すぐに session を持たないと出来事が届かない（CLServiceSession.h）
-        if preference.isEnabled, monitor.isAlwaysAuthorizedWithFullAccuracy, session == nil {
+        if preference.isEnabled, isLocationAlwaysAuthorized, session == nil {
             session = monitor.makeAlwaysSession()
         }
         let areNotificationsAllowed = preference.isEnabled ? await notifier.areNotificationsAllowed() : false
+        if preference.isEnabled {
+            permissionStatus = NearbyAlertPermissionStatus(
+                isLocationAlways: monitor.isAlwaysAuthorized,
+                hasFullAccuracy: monitor.hasFullAccuracy,
+                areNotificationsAllowed: areNotificationsAllowed
+            )
+        }
         let shouldMonitor = NearbyPieceMonitoring.shouldMonitor(
             isEnabled: preference.isEnabled,
-            isLocationAlwaysAuthorized: monitor.isAlwaysAuthorizedWithFullAccuracy,
+            isLocationAlwaysAuthorized: isLocationAlwaysAuthorized,
             areNotificationsAllowed: areNotificationsAllowed
         )
         if shouldMonitor {
