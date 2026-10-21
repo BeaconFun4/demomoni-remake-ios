@@ -16,6 +16,7 @@ private actor OpenCounter {
     }
 }
 
+@Suite(.timeLimit(.minutes(1)))
 struct OpenOnceTests {
     @Test func opensOnceWhenCalledWhileOpening() async {
         let counter = OpenCounter()
@@ -51,7 +52,8 @@ struct OpenOnceTests {
             for await _ in started {
                 break
             }
-            gateContinuation.yield()
+            // 閉じて開けるので、壊れて 2 回目の開く処理が始まっても止まらず、回数の確認で失敗する
+            gateContinuation.finish()
 
             var results: [Int] = []
             for await result in group {
