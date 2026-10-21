@@ -48,6 +48,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 データと状態:
 
 - `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。2 件ずつ）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- ピースの画像（`Assets.xcassets/Pieces/`）は盤の 32 マスぶん（`piece1`〜`piece32`。400 × 400 の中央の 200 × 200 がマス）。`piece1`・`piece14` は元アプリのもの、残りの 30 枚は `scripts/make-piece-images.swift` で `goryokaku_long` を `PieceAllBorder` の形に切り出したもの（既にある画像は上書きしない）
 - `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込みは `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
 - `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`
 - サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
