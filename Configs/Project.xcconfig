@@ -25,3 +25,6 @@ INFOPLIST_KEY_CFBundleDisplayName = でももに！
 
 // 位置情報（使用中の許可）の利用目的。さがすタブで近くの iBeacon を見つけるために使う
 INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = 近くのビーコンを見つけて、ピースをゲットするために使います
+
+// 輸出コンプライアンスの申告（Info.plist の ITSAppUsesNonExemptEncryption）。免除対象外の暗号を使わないので NO。暗号を入れるときは見直す
+INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO
