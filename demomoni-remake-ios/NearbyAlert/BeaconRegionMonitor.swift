@@ -19,10 +19,14 @@ protocol BeaconRegionMonitor: AnyObject {
     func requestAlwaysAuthorizationIfNeeded()
     /// 位置情報（常に）の session を始める。持っている間だけ、アプリを閉じていても出来事が届く
     func makeAlwaysSession() -> any LocationSession
-    /// 見張る条件をこの一覧にそろえる（無いものは足し、一覧に無いものは外す）
-    func setConditions(_ conditions: [MonitoredBeacon]) async
-    /// 見張る条件をすべて外す。条件はアプリを終えても残るので、オフにしたとき・オフのまま起動したときに呼ぶ
-    func removeAllConditions() async
+    /// 見張る条件をこの一覧にそろえる（無いものは足し、一覧に無いものは外す）。
+    /// 位置情報の許可が無い・未決定で `CLMonitor` を開けなければ何もせず `false` を返す
+    @discardableResult
+    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool
+    /// 見張る条件をすべて外す。条件はアプリを終えても残るので、オフにしたとき・オフのまま起動したときに呼ぶ。
+    /// 位置情報の許可が無い・未決定で `CLMonitor` を開けなければ何もせず `false` を返す（条件は残る）
+    @discardableResult
+    func removeAllConditions() async -> Bool
 }
 
 /// `CLMonitor` の `BeaconIdentityCondition` でビーコンの範囲を見張る。
@@ -84,8 +88,10 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
         CLServiceSession(authorization: .always)
     }
 
-    func setConditions(_ conditions: [MonitoredBeacon]) async {
-        let monitor = await opener.value()
+    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool {
+        guard let monitor = await openMonitorIfAuthorized() else {
+            return false
+        }
         let wanted = Set(conditions.map(\.identifier))
         for identifier in await monitor.identifiers where !wanted.contains(identifier) {
             await monitor.remove(identifier)
@@ -94,12 +100,44 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
         for condition in conditions where !existing.contains(condition.identifier) {
             await monitor.add(condition.beaconIdentityCondition, identifier: condition.identifier)
         }
+        return true
     }
 
-    func removeAllConditions() async {
-        let monitor = await opener.value()
+    func removeAllConditions() async -> Bool {
+        guard let monitor = await openMonitorIfAuthorized() else {
+            return false
+        }
         for identifier in await monitor.identifiers {
             await monitor.remove(identifier)
+        }
+        return true
+    }
+
+    /// 位置情報が「常に」か「使用中」のときだけ `CLMonitor` を開く（`NearbyPieceMonitoring.canOpenMonitor(_:)`。#120）
+    private func openMonitorIfAuthorized() async -> CLMonitor? {
+        guard NearbyPieceMonitoring.canOpenMonitor(LocationAuthorization(manager.authorizationStatus)) else {
+            return nil
+        }
+        return await opener.value()
+    }
+}
+
+extension LocationAuthorization {
+    /// CoreLocation の許可の状態から作る
+    nonisolated init(_ status: CLAuthorizationStatus) {
+        switch status {
+        case .notDetermined:
+            self = .notDetermined
+        case .restricted:
+            self = .restricted
+        case .denied:
+            self = .denied
+        case .authorizedAlways:
+            self = .always
+        case .authorizedWhenInUse:
+            self = .whenInUse
+        @unknown default:
+            self = .unknown
         }
     }
 }
@@ -143,7 +181,11 @@ final class InactiveBeaconRegionMonitor: BeaconRegionMonitor {
         FakeLocationSession()
     }
 
-    func setConditions(_ conditions: [MonitoredBeacon]) async {}
+    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool {
+        false
+    }
 
-    func removeAllConditions() async {}
+    func removeAllConditions() async -> Bool {
+        false
+    }
 }

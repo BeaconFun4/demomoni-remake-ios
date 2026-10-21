@@ -13,6 +13,8 @@ private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
     let events: AsyncStream<BeaconRegionEvent>
     var isAlwaysAuthorized: Bool
     var hasFullAccuracy = true
+    /// CLMonitor を開けるか（位置情報の許可が無い・未決定なら開けない）
+    var canOpenMonitor = true
     private(set) var alwaysAuthorizationRequests = 0
     private(set) var conditions: [MonitoredBeacon]?
     private(set) var removeAllCount = 0
@@ -39,13 +41,21 @@ private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
         return session
     }
 
-    func setConditions(_ conditions: [MonitoredBeacon]) async {
+    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool {
+        guard canOpenMonitor else {
+            return false
+        }
         self.conditions = conditions
+        return true
     }
 
-    func removeAllConditions() async {
+    func removeAllConditions() async -> Bool {
+        guard canOpenMonitor else {
+            return false
+        }
         conditions = nil
         removeAllCount += 1
+        return true
     }
 }
 
