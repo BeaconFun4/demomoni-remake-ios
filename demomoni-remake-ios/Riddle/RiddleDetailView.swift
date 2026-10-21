@@ -3,12 +3,26 @@
 //  demomoni-remake-ios
 //
 
+import SwiftData
 import SwiftUI
 
 /// なぞなぞの詳細。問題文を出し、「ヒントをみる」でヒントを出す。
-/// 答え（`Riddle.answer`）はまだ出さない
+/// 答えの場所のピースを獲得していれば、答えも出す（獲得していなければ今のまま）
 struct RiddleDetailView: View {
     let riddle: Riddle
+
+    /// 答えの場所のピースの獲得の記録
+    @Query private var records: [CollectedPiece]
+
+    init(riddle: Riddle) {
+        self.riddle = riddle
+        let pieceID = riddle.pieceId
+        _records = Query(filter: #Predicate<CollectedPiece> { $0.pieceID == pieceID })
+    }
+
+    private var isSolved: Bool {
+        RiddleProgress.isSolved(riddle, collectedPieceIDs: Set(records.map(\.pieceID)))
+    }
 
     /// ヒントを出したか。詳細を開き直すと隠れた状態に戻る
     @State private var showsHint = false
@@ -22,6 +36,16 @@ struct RiddleDetailView: View {
                     .frame(maxWidth: .infinity)
                     .padding(24)
                     .glassEffect(.regular, in: .rect(cornerRadius: 24))
+
+                if isSolved {
+                    Text(RiddleProgress.answerText(for: riddle))
+                        .font(.demomoni(size: 28, relativeTo: .title2))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(24)
+                        .glassEffect(.regular.tint(.themeColorPink.opacity(0.4)), in: .rect(cornerRadius: 24))
+                        .accessibilityLabel(RiddleProgress.answerAccessibilityLabel(for: riddle))
+                }
 
                 if showsHint {
                     Text("ヒント：\(riddle.hint)")
@@ -55,4 +79,6 @@ struct RiddleDetailView: View {
     NavigationStack {
         RiddleDetailView(riddle: Catalog.bundled.riddles[0])
     }
+    // swiftlint:disable:next force_try
+    .modelContainer(try! .demomoni(inMemory: true))
 }
