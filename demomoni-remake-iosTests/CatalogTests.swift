@@ -14,13 +14,13 @@ private final class TestBundleToken {}
 struct CatalogTests {
     private let beaconUUID = UUID(uuidString: "E8C65602-6D9C-44EF-9734-B2D3EF1CD961")!
 
-    /// 同梱した 3 つの JSON を読める。ビーコンとピースは盤のマスと同じ 32 件。なぞなぞは元アプリのデータのまま 2 件
+    /// 同梱した 3 つの JSON を読める。ビーコン・ピース・なぞなぞは盤のマスと同じ 32 件
     @Test
     func loadsBundledData() throws {
         let catalog = try Catalog.load()
         #expect(catalog.beacons.count == 32)
         #expect(catalog.pieces.count == 32)
-        #expect(catalog.riddles.count == 2)
+        #expect(catalog.riddles.count == 32)
     }
 
     /// 元アプリの 2 台のビーコンは、UUID・major・minor を元のデータのとおりに読む（獲得済みの記録が id で残っているので変えない）
@@ -117,13 +117,52 @@ struct CatalogTests {
         #expect(piece.longitude == 140.754003)
     }
 
-    /// なぞなぞのタイトル・問題文・ヒントを読む（末尾のカンマを直した riddles.json）
+    /// なぞなぞのタイトル・問題文・ヒント・答え・ピースを読む。元アプリの 2 問は文言を変えず、先頭に置く
     @Test
     func decodesRiddles() throws {
         let catalog = try Catalog.load()
-        #expect(catalog.riddles.map(\.title) == ["函館ののっぽ", "函館の見晴らし台"])
-        #expect(catalog.riddles.first?.content == "函館の白くて高いものといえば？")
-        #expect(catalog.riddles.first?.hint == "五◯郭タワー")
+        #expect(catalog.riddles.prefix(2).map(\.title) == ["函館ののっぽ", "函館の見晴らし台"])
+        let first = try #require(catalog.riddles.first)
+        #expect(first.content == "函館の白くて高いものといえば？")
+        #expect(first.hint == "五◯郭タワー")
+        #expect(first.answer == "五稜郭タワー")
+        #expect(catalog.piece(for: first)?.name == "五稜郭タワー")
+        let second = catalog.riddles[1]
+        #expect(second.content == "函館で夜景が綺麗な有名なところといえば？")
+        #expect(second.hint == "函◯山")
+        #expect(catalog.piece(for: second)?.id == 1)
+    }
+
+    /// なぞなぞとピースは 1 対 1。pieceId はすべて実在するピースを指し、id とタイトルは重複しない
+    @Test
+    func riddlesAndPiecesCorrespondOneToOne() throws {
+        let catalog = try Catalog.load()
+        let pieceIDs = catalog.riddles.map(\.pieceId)
+        #expect(Set(pieceIDs).count == pieceIDs.count, "同じピースを指すなぞなぞがある")
+        #expect(Set(pieceIDs) == Set(catalog.pieces.map(\.id)))
+        #expect(Set(catalog.riddles.map(\.id)).count == catalog.riddles.count)
+        #expect(Set(catalog.riddles.map(\.title)).count == catalog.riddles.count)
+    }
+
+    /// 答えはピースの場所の名前で、ヒントは答えの 1 文字だけを「◯」で伏せたもの
+    @Test
+    func riddleAnswersMatchPiecesAndHints() throws {
+        let catalog = try Catalog.load()
+        for riddle in catalog.riddles {
+            #expect(catalog.piece(for: riddle)?.name == riddle.answer, "なぞなぞ \(riddle.id) の答え")
+            let hint = Array(riddle.hint)
+            let answer = Array(riddle.answer)
+            #expect(hint.count == answer.count, "なぞなぞ \(riddle.id) のヒントの長さ")
+            let hidden = zip(hint, answer).filter { $0 != $1 }
+            #expect(hidden.count == 1 && hidden.first?.0 == "◯", "なぞなぞ \(riddle.id) のヒント: \(riddle.hint)")
+        }
+    }
+
+    /// なぞなぞの pieceId のピースが無ければ `nil`
+    @Test
+    func pieceForRiddleIsNilWhenMissing() throws {
+        let riddle = Riddle(id: 0, pieceId: 99, title: "", content: "", hint: "", answer: "", area: "")
+        #expect(try Catalog.load().piece(for: riddle) == nil)
     }
 
     /// ピースの番号は画像の名前の末尾の数字

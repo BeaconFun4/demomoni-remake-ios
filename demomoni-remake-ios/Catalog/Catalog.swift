@@ -31,6 +31,11 @@ nonisolated struct Catalog: Sendable {
         pieces.first { $0.id == id }
     }
 
+    /// なぞなぞの答えの場所にあるピース。無ければ `nil`
+    func piece(for riddle: Riddle) -> Piece? {
+        piece(id: riddle.pieceId)
+    }
+
     /// iBeacon の UUID・major・minor に対応するピース。
     /// 同梱データに無いビーコン、またはビーコンに対応するピースが無ければ `nil`
     func piece(forBeaconUUID uuid: UUID, major: UInt16, minor: UInt16) -> Piece? {
