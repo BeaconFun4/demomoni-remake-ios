@@ -21,6 +21,8 @@ final class BeaconDetector {
     @ObservationIgnored private let scanner: any BeaconScanner
     /// `start()` されているか（許可を待っている間も `true`）
     @ObservationIgnored private var wantsScanning = false
+    /// 外から入れた擬似検知のうち、まだ `detectedPiece` に入れていないもの（`injectDetection(pieceID:)`）
+    @ObservationIgnored private var injectedPiece: Piece?
 
     init(catalog: Catalog, scanner: any BeaconScanner) {
         self.catalog = catalog
@@ -35,6 +37,7 @@ final class BeaconDetector {
     /// 許可が無い・「正確な位置情報」がオフなら探さない（画面で `permission` を見て案内を出す）
     func start() {
         wantsScanning = true
+        deliverInjectedPiece()
         switch permission {
         case .notDetermined:
             scanner.requestPermission()
@@ -49,6 +52,23 @@ final class BeaconDetector {
     func stop() {
         wantsScanning = false
         endRanging()
+    }
+
+    /// 外から「このピースのビーコンを見つけた」を入れる（デバッグモードの擬似検知）。
+    /// 探している（`start()` した後で `stop()` していない）間なら、すぐにビーコンを見つけたときと同じく `detectedPiece` に入れる。
+    /// 探していなければ持っておき、次に `start()` したときに入れる（さがすタブは表示している間だけ探すため）。
+    /// 位置情報の許可が無くても入れる。持っている間にもう一度入れたら、後のほうだけを残す
+    /// - Returns: 同梱データにあるピースか。無ければ何もしない
+    @discardableResult
+    func injectDetection(pieceID: Int) -> Bool {
+        guard let piece = catalog.piece(id: pieceID) else {
+            return false
+        }
+        injectedPiece = piece
+        if wantsScanning {
+            deliverInjectedPiece()
+        }
+        return true
     }
 
     /// 見つけたピースを画面で扱ったので消す
@@ -80,6 +100,14 @@ final class BeaconDetector {
             }
             detectedPiece = piece
         }
+    }
+
+    private func deliverInjectedPiece() {
+        guard let piece = injectedPiece else {
+            return
+        }
+        injectedPiece = nil
+        detectedPiece = piece
     }
 
     private func beginRanging() {
