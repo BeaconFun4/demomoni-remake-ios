@@ -58,4 +58,15 @@ struct AppInfoTests {
         #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysUsageDescription") == nil)
         #expect(Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") == nil)
     }
+
+    /// 輸出コンプライアンスの申告（免除対象外の暗号を使わない）が真偽値の false で Info.plist に入っていることを確認する。
+    /// 無いと App Store Connect がビルドごとに暗号化の質問を出し、回答するまで TestFlight に配信されない。
+    /// キーが無いときや文字列（"NO"）のときは Bool にならないので、#require で落ちる
+    @Test
+    func declaresNoNonExemptEncryption() throws {
+        let usesEncryption = try #require(
+            Bundle.main.object(forInfoDictionaryKey: "ITSAppUsesNonExemptEncryption") as? Bool
+        )
+        #expect(usesEncryption == false)
+    }
 }

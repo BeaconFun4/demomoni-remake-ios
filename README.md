@@ -72,6 +72,9 @@ template-app-ios と同じ構成で、App Store Connect の API Key で認証し
 - Archive / Upload は Actions タブから手動でも実行できます（Run workflow）。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
 - 実行中の Upload は、次の push が来ても取り消しません（途中で止めると App Store Connect に中途半端なビルドが残るため）
 - App Store Connect にアプリが無いと、Upload はアップロードの前に止まり、「新規アプリ」画面に入力する値（バンドル ID・SKU など）を Job Summary に出します。アプリを作ってから再実行します
+- 輸出コンプライアンスは [Configs/Project.xcconfig](Configs/Project.xcconfig) の `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` で申告しています（Info.plist の `ITSAppUsesNonExemptEncryption`）。アップロードしたビルドは暗号化の質問なしで TestFlight に配信できます。
+  独自の暗号や標準外のアルゴリズムを入れるときは見直します（`YES` だと App Store Connect で書類が要ることがあり、自動では配信されません）
+- 申告は、それを入れた後にビルドしたものにしか効きません。前に上がったビルド（「輸出コンプライアンスの情報がありません（Missing Compliance）」のもの）は使いません。使うなら App Store Connect の TestFlight で手で回答します
 
 Secrets は BeaconFun4 の Organization に登録してあります（Settings → Secrets and variables → Actions）。
 
@@ -86,6 +89,9 @@ Secrets は BeaconFun4 の Organization に登録してあります（Settings �
 |---|---|
 | `TESTFLIGHT_INTERNAL_TESTERS` | TestFlight の内部テスターにするメールアドレス（カンマ区切り）。Upload が内部テストグループ「Internal Testers」を作って追加し、以降のビルドは処理が終わりしだい配信されます。空なら何もしません |
 | `ENABLE_DELIVERY` | `false` にすると Upload をスキップします。未設定なら実行します |
+
+TestFlight の配信先を用意するには、担当者が変数 `TESTFLIGHT_INTERNAL_TESTERS` を、BeaconFun4 の Organization かこのリポジトリの Settings → Secrets and variables → Actions → **Variables** に登録します。
+テスターは App Store Connect のユーザーである必要があります。メールアドレスはリポジトリ・Issue・PR に書きません（このリポジトリは public です）。
 
 App Store の掲載情報（スクリーンショット・説明文・ヘッダー）のワークフローはまだありません（#64）。
 

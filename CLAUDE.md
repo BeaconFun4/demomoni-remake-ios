@@ -79,6 +79,7 @@ Secrets（`APPLE_API_KEY_BASE64`・`APPLE_API_KEY_ID`・`APPLE_API_ISSUER_ID`・
 - Upload は `develop` / `release/**` への push（ドキュメントだけの変更でも）。ループの最終 PR を `develop` にマージすると TestFlight にビルドが上がる
 - Archive（IPA Export まで。アップロードしない）は `main` への push。どちらも手動実行（workflow_dispatch）できる
 - ビルド番号は Xcode が App Store Connect の最新ビルドを見て採番するので、`CURRENT_PROJECT_VERSION` は上げない
+- 輸出コンプライアンスは `Configs/Project.xcconfig` の `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` で申告している（TestFlight で暗号化の質問を出さないため）。独自の暗号や標準外のアルゴリズムを入れるときは見直す
 - Xcode は `_archive.yml` の `xcode-version` でも固定している。`_build.yml` と同じ値にそろえる
 - App Store の掲載情報（スクリーンショット・説明文・ヘッダー）のワークフローはまだ無い（#64）
 
