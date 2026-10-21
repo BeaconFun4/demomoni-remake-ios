@@ -43,17 +43,23 @@ private final class StubBeaconScanner: BeaconScanner {
         }
         continuation.yield(event)
     }
+
+    /// 出来事を送り、`detector` がそれを扱い終えるまで待つ
+    func send(_ event: BeaconScanEvent, to detector: BeaconDetector) async {
+        await detector.handling(event) { send(event) }
+    }
 }
 
 extension BeaconDetector {
-    /// `action` で送った出来事を、この検知が扱い終えるまで待つ（出来事は `AsyncStream` で後から届くため）
-    func handling(_ action: () -> Void) async {
-        await withCheckedContinuation { continuation in
-            onEventHandled = { [weak self] _ in
-                self?.onEventHandled = nil
-                continuation.resume()
-            }
-            action()
+    /// `action` の後、この検知が出来事（`event` を決めたらそれと同じもの）を扱い終えるまで待つ（出来事は `AsyncStream` で後から届くため）。
+    /// テストが時間切れで cancel されたら、待つのをやめる
+    func handling(_ event: BeaconScanEvent? = nil, after action: () -> Void) async {
+        let (handled, continuation) = AsyncStream.makeStream(of: BeaconScanEvent.self)
+        onEventHandled = { continuation.yield($0) }
+        defer { onEventHandled = nil }
+        action()
+        for await handledEvent in handled where event == nil || handledEvent == event {
+            return
         }
     }
 }
@@ -84,7 +90,7 @@ struct BeaconDetectorTests {
         #expect(scanner.permissionRequests == 1)
         #expect(!detector.isScanning)
 
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(detector.permission == .authorized)
         #expect(detector.isScanning)
         #expect(scanner.rangingUUIDs == [uuid])
@@ -123,8 +129,8 @@ struct BeaconDetectorTests {
 
         detector.start()
         detector.start()
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await scanner.send(.permissionChanged(.authorized), to: detector)
+        await scanner.send(.permissionChanged(.authorized), to: detector)
         detector.start()
         #expect(scanner.startCount == 1)
     }
@@ -137,7 +143,7 @@ struct BeaconDetectorTests {
 
         detector.start()
         detector.stop()
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(!detector.isScanning)
         #expect(scanner.startCount == 0)
     }
@@ -153,7 +159,7 @@ struct BeaconDetectorTests {
         detector.start()
         #expect(scanner.startCount == 2)
 
-        await detector.handling { scanner.send(.ranged([motomachi])) }
+        await scanner.send(.ranged([motomachi]), to: detector)
         #expect(detector.detectedPiece?.name == "元町公園")
     }
 
@@ -164,11 +170,11 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        await detector.handling { scanner.send(.permissionChanged(.reducedAccuracy)) }
+        await scanner.send(.permissionChanged(.reducedAccuracy), to: detector)
         #expect(detector.permission == .reducedAccuracy)
         #expect(!detector.isScanning)
 
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(detector.isScanning)
         #expect(scanner.startCount == 2)
     }
@@ -180,7 +186,7 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        await detector.handling { scanner.send(.permissionChanged(.denied)) }
+        await scanner.send(.permissionChanged(.denied), to: detector)
         #expect(!detector.isScanning)
         #expect(scanner.stopCount == 1)
     }
@@ -191,7 +197,7 @@ struct BeaconDetectorTests {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
-        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(!detector.isScanning)
     }
 
@@ -202,7 +208,7 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        await detector.handling { scanner.send(.ranged([unknown, motomachi])) }
+        await scanner.send(.ranged([unknown, motomachi]), to: detector)
         #expect(detector.detectedPiece?.name == "元町公園")
 
         detector.clearDetectedPiece()
@@ -216,8 +222,8 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        await detector.handling { scanner.send(.ranged([unknown])) }
-        await detector.handling { scanner.send(.ranged([])) }
+        await scanner.send(.ranged([unknown]), to: detector)
+        await scanner.send(.ranged([]), to: detector)
         #expect(detector.detectedPiece == nil)
     }
 
@@ -230,7 +236,7 @@ struct BeaconDetectorTests {
         detector.stop()
         #expect(scanner.stopCount == 1)
 
-        await detector.handling { scanner.send(.ranged([motomachi])) }
+        await scanner.send(.ranged([motomachi]), to: detector)
         #expect(detector.detectedPiece == nil)
     }
 
@@ -249,7 +255,7 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         #expect(detector.permission == .authorized)
 
-        await detector.handling { detector.start() }
+        await detector.handling(after: detector.start)
         #expect(detector.detectedPiece?.name == "元町公園")
     }
 
