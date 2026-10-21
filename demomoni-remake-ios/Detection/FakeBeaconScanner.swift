@@ -9,19 +9,28 @@ import Foundation
 /// ビーコンを決めなければ、何も見つけない（位置情報を使わずに画面を確かめるとき）。
 /// CoreLocation が動かない Simulator の UI テストと、PR のスクリーンショットの撮影で使う
 final class FakeBeaconScanner: BeaconScanner {
-    var onEvent: (@MainActor (BeaconScanEvent) -> Void)?
+    let events: AsyncStream<BeaconScanEvent>
     let permission = LocationPermission.authorized
 
+    nonisolated private let continuation: AsyncStream<BeaconScanEvent>.Continuation
     private let beacon: DetectedBeacon?
     private let delay: Duration
-    private var task: Task<Void, Never>?
+    /// 見つけたことにするまで待っている処理（テストで、やめた後に終わるのを待つため internal）
+    private(set) var task: Task<Void, Never>?
 
     init(beacon: DetectedBeacon?, delay: Duration = .seconds(2)) {
+        (events, continuation) = AsyncStream.makeStream(of: BeaconScanEvent.self)
         self.beacon = beacon
         self.delay = delay
     }
 
-    func requestPermission() {}
+    deinit {
+        continuation.finish()
+    }
+
+    func makeSession() -> any LocationSession {
+        FakeLocationSession()
+    }
 
     func startRanging(uuids: Set<UUID>) {
         task?.cancel()
@@ -29,12 +38,13 @@ final class FakeBeaconScanner: BeaconScanner {
             return
         }
         let delay = delay
-        task = Task { [weak self] in
+        let continuation = continuation
+        task = Task {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else {
                 return
             }
-            self?.onEvent?(.ranged([beacon]))
+            continuation.yield(.ranged([beacon]))
         }
     }
 
@@ -42,4 +52,9 @@ final class FakeBeaconScanner: BeaconScanner {
         task?.cancel()
         task = nil
     }
+}
+
+/// 擬似検知の session。位置情報を使わないので何もしない
+final class FakeLocationSession: LocationSession {
+    func invalidate() {}
 }

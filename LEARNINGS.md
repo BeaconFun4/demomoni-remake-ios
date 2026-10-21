@@ -8,6 +8,12 @@
 - `PKCanvasView` は `UIScrollView` なので `otherElements` に入らない。`accessibilityElement(children: .ignore)` でまとめた画像も `images` に入らない。どちらも `app.descendants(matching: .any)["ラベル"]` で探す（2026-10-21）
 - 起動の直後にボタンを押すと、Mac が混んでいるときに「No matches found」で落ちる。`waitForExistence` で出るまで待ってから押す（2026-10-21）
 - 擬似検知（`-fakeBeaconID`）は 2 秒後に見つけるが、Mac が混んでいると表示まで遅れる。UI テストでは 30 秒まで待つ（2026-10-21）
+- `-only-testing` で一部の UI テストだけを流す前に、Simulator を `simctl shutdown` → `boot` する。直前のフル検証の `LaunchTests` が横向きのまま残すと、せっていタブの「デバッグモード」の行が画面の外に出て `DebugModeUITests` が落ちる（2026-10-22）
+- せっていタブの `List` の行の `Toggle` は、行ではなく中のスイッチ（`app.switches["ラベル"].switches.firstMatch`）を押す（2026-10-22）
+
+## SwiftUI
+
+- せっていタブで行の下に案内を出すと、スイッチの行のカードの下の角が四角くなって切れて見える。案内は Section の footer に置く（2026-10-22）
 
 ## PencilKit
 
@@ -17,3 +23,9 @@
 ## SwiftData
 
 - `@Attribute(.unique)` は同じ値の insert を upsert として扱い、既存の記録を上書きする。最初の日時を残したいときは、先に探してから insert する（2026-10-20）
+
+## iBeacon / CoreLocation
+
+- 同梱のビーコンは 32 台あり、`CLMonitor` の条件の上限（20）を超える。未獲得が 20 台を超える間は UUID ごとの条件にまとめ、どのビーコンかは出来事の `refinement` で読む（`NearbyPieceMonitoring.conditions`）（2026-10-22）
+- `CLMonitor` の条件はアプリを終えても残る。identifier にビーコンの UUID・major・minor を入れないと、`beacons.json` の値を変えたときに古い条件が残り、黙って検知しなくなる（2026-10-22）
+- `CLMonitor` は actor なので、`events` も外からは `await` で読む（`let` でも）（2026-10-22）

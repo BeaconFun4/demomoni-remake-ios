@@ -21,16 +21,30 @@ final class BeaconDetector {
     @ObservationIgnored private let scanner: any BeaconScanner
     /// `start()` されているか（許可を待っている間も `true`）
     @ObservationIgnored private var wantsScanning = false
+    /// 位置情報の session。探していて、許可がまだ・許可済みの間だけ持つ（`updateSession()`）
+    @ObservationIgnored private var session: (any LocationSession)?
     /// 外から入れた擬似検知のうち、まだ `detectedPiece` に入れていないもの（`injectDetection(pieceID:)`）
     @ObservationIgnored private var injectedPiece: Piece?
+    /// `scanner.events` を受け続ける処理。この検知が無くなったら cancel する
+    @ObservationIgnored private var eventTask: Task<Void, Never>?
+    /// 出来事を 1 つ扱い終えるたびに呼ぶ（テストで、出来事が届いたのを待つため）
+    @ObservationIgnored var onEventHandled: ((BeaconScanEvent) -> Void)?
 
     init(catalog: Catalog, scanner: any BeaconScanner) {
         self.catalog = catalog
         self.scanner = scanner
         permission = scanner.permission
-        scanner.onEvent = { [weak self] event in
-            self?.handle(event)
+        // MainActor で受けるので、デリゲートがどのスレッドで呼ばれても handle(_:) は MainActor で動く
+        eventTask = Task { [weak self, events = scanner.events] in
+            for await event in events {
+                self?.handle(event)
+            }
         }
+    }
+
+    isolated deinit {
+        eventTask?.cancel()
+        session?.invalidate()
     }
 
     /// 探し始める。許可をまだ尋ねていなければ尋ね、許可されたら探す。
@@ -38,13 +52,9 @@ final class BeaconDetector {
     func start() {
         wantsScanning = true
         deliverInjectedPiece()
-        switch permission {
-        case .notDetermined:
-            scanner.requestPermission()
-        case .authorized:
+        updateSession()
+        if permission == .authorized {
             beginRanging()
-        case .denied, .restricted, .reducedAccuracy:
-            break
         }
     }
 
@@ -52,6 +62,7 @@ final class BeaconDetector {
     func stop() {
         wantsScanning = false
         endRanging()
+        updateSession()
     }
 
     /// 外から「このピースのビーコンを見つけた」を入れる（デバッグモードの擬似検知）。
@@ -94,12 +105,13 @@ final class BeaconDetector {
             } else {
                 endRanging()
             }
+            updateSession()
         case .ranged(let beacons):
-            guard isScanning, let piece = Self.firstPiece(in: beacons, catalog: catalog) else {
-                return
+            if isScanning, let piece = Self.firstPiece(in: beacons, catalog: catalog) {
+                detectedPiece = piece
             }
-            detectedPiece = piece
         }
+        onEventHandled?(event)
     }
 
     private func deliverInjectedPiece() {
@@ -108,6 +120,19 @@ final class BeaconDetector {
         }
         injectedPiece = nil
         detectedPiece = piece
+    }
+
+    /// 探していて、許可がまだ・許可済みの間だけ session を持つ。
+    /// まだ尋ねていなければ、session を始めたときに許可を尋ねる（さがすタブを最初に表示したとき）。
+    /// 許可が無い・「正確な位置情報」がオフのときは持たない（画面で案内する）
+    private func updateSession() {
+        let needsSession = wantsScanning && (permission == .notDetermined || permission == .authorized)
+        if needsSession, session == nil {
+            session = scanner.makeSession()
+        } else if !needsSession, let session {
+            session.invalidate()
+            self.session = nil
+        }
     }
 
     private func beginRanging() {

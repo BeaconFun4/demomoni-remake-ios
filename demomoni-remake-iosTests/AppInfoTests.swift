@@ -74,10 +74,21 @@ struct AppInfoTests {
         #expect(description == "近くのビーコンを見つけて、ピースをゲットするために使います")
     }
 
-    /// 位置情報は使用中だけに使う。常に使う許可の利用目的と、バックグラウンドの動作（位置情報の監視）が Info.plist に無いことを確認する
+    /// 位置情報（常に許可）の利用目的が Info.plist に入っていて空でないことを確認する。
+    /// せっていタブでオンにした人だけが尋ねられる。無いと「常に許可」のダイアログが出ず、アプリを閉じている間に CLMonitor の出来事が届かない
     @Test
-    func doesNotRequestBackgroundLocation() {
-        #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysAndWhenInUseUsageDescription") == nil)
+    func locationAlwaysUsageDescriptionIsSet() throws {
+        let description = try #require(
+            Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysAndWhenInUseUsageDescription") as? String
+        )
+        #expect(!description.isEmpty)
+        #expect(description == "アプリを閉じていても、近くにピースがあることを知らせるために使います")
+    }
+
+    /// バックグラウンドの動作（UIBackgroundModes）と、iOS 10 以前の常に許可の利用目的は Info.plist に無いことを確認する。
+    /// CLMonitor は「常に許可」があれば、アプリが終了していても出来事でバックグラウンドに起こされるので、UIBackgroundModes は要らない
+    @Test
+    func doesNotDeclareBackgroundModes() {
         #expect(Bundle.main.object(forInfoDictionaryKey: "NSLocationAlwaysUsageDescription") == nil)
         #expect(Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") == nil)
     }
