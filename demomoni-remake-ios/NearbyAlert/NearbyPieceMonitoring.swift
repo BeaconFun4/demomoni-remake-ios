@@ -45,9 +45,10 @@ nonisolated enum NearbyPieceMonitoring {
     /// 通知の `userInfo` のピースの id のキー
     static let pieceIDKey = "pieceID"
 
-    /// ビーコン 1 台の条件の identifier
-    static func identifier(beaconID: Int) -> String {
-        "beacon-\(beaconID)"
+    /// ビーコン 1 台の条件の identifier。UUID・major・minor を入れる
+    /// （CLMonitor の条件はアプリを終えても残るので、同梱データの値が変わったら別の条件として足し直すため）
+    static func identifier(for beacon: Beacon) -> String {
+        "beacon-\(beacon.uuid.uuidString)-\(beacon.major)-\(beacon.minor)"
     }
 
     /// UUID のすべてのビーコンの条件の identifier
@@ -55,12 +56,20 @@ nonisolated enum NearbyPieceMonitoring {
         "beacon-uuid-\(uuid.uuidString)"
     }
 
-    /// ビーコン 1 台の条件の identifier から beaconId を読む。ビーコン 1 台の条件でなければ `nil`
-    static func beaconID(fromIdentifier identifier: String) -> Int? {
+    /// ビーコン 1 台の条件の identifier から、そのビーコンを読む。ビーコン 1 台の条件でなければ `nil`
+    static func beacon(fromIdentifier identifier: String) -> DetectedBeacon? {
         guard identifier.hasPrefix("beacon-"), !identifier.hasPrefix("beacon-uuid-") else {
             return nil
         }
-        return Int(identifier.dropFirst("beacon-".count))
+        // UUID も「-」を含むので、後ろの 2 つを major・minor として読む
+        let parts = identifier.dropFirst("beacon-".count).split(separator: "-")
+        guard parts.count >= 3,
+              let minor = UInt16(parts[parts.count - 1]),
+              let major = UInt16(parts[parts.count - 2]),
+              let uuid = UUID(uuidString: parts.dropLast(2).joined(separator: "-")) else {
+            return nil
+        }
+        return DetectedBeacon(uuid: uuid, major: major, minor: minor)
     }
 
     /// 監視するか。スイッチがオンで、位置情報が「常に」・正確な位置情報がオン・通知が許可されているときだけ
@@ -74,7 +83,7 @@ nonisolated enum NearbyPieceMonitoring {
         let uncollected = beacons.filter { !collectedPieceIDs.contains($0.beaconId) }
         if uncollected.count <= limit {
             return uncollected.map {
-                MonitoredBeacon(identifier: identifier(beaconID: $0.beaconId), uuid: $0.uuid, major: $0.major, minor: $0.minor)
+                MonitoredBeacon(identifier: identifier(for: $0), uuid: $0.uuid, major: $0.major, minor: $0.minor)
             }
         }
         var uuids: [UUID] = []
@@ -97,16 +106,9 @@ nonisolated enum NearbyPieceMonitoring {
         guard event.isInside, !isAppActive else {
             return nil
         }
-        let piece: Piece?
-        if let beacon = event.beacon {
-            piece = catalog.piece(forBeaconUUID: beacon.uuid, major: beacon.major, minor: beacon.minor)
-        } else if let beaconID = beaconID(fromIdentifier: event.identifier),
-                  let beacon = catalog.beacons.first(where: { $0.beaconId == beaconID }) {
-            piece = catalog.piece(id: beacon.beaconId)
-        } else {
-            piece = nil
-        }
-        guard let piece, !collectedPieceIDs.contains(piece.id) else {
+        guard let beacon = event.beacon ?? beacon(fromIdentifier: event.identifier),
+              let piece = catalog.piece(forBeaconUUID: beacon.uuid, major: beacon.major, minor: beacon.minor),
+              !collectedPieceIDs.contains(piece.id) else {
             return nil
         }
         return piece

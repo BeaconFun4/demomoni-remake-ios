@@ -38,8 +38,8 @@ struct NearbyPieceMonitoringTests {
         let collected = Set(catalog.pieces.map(\.id)).subtracting([0, 1])
         let conditions = NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected)
         #expect(conditions == [
-            MonitoredBeacon(identifier: "beacon-0", uuid: uuid, major: 0, minor: 5000),
-            MonitoredBeacon(identifier: "beacon-1", uuid: uuid, major: 0, minor: 6000)
+            MonitoredBeacon(identifier: "beacon-\(uuid.uuidString)-0-5000", uuid: uuid, major: 0, minor: 5000),
+            MonitoredBeacon(identifier: "beacon-\(uuid.uuidString)-0-6000", uuid: uuid, major: 0, minor: 6000)
         ])
     }
 
@@ -69,18 +69,26 @@ struct NearbyPieceMonitoringTests {
         #expect(conditions.isEmpty)
     }
 
-    /// ビーコン 1 台の条件の identifier から beaconId を読む
+    /// ビーコン 1 台の条件の identifier には UUID・major・minor が入り、そこからビーコンを読める
+    /// （同梱データの値が変わったら identifier も変わり、古い条件を外して足し直す）
     @Test
-    func readsBeaconIDFromIdentifier() {
-        #expect(NearbyPieceMonitoring.beaconID(fromIdentifier: NearbyPieceMonitoring.identifier(beaconID: 14)) == 14)
-        #expect(NearbyPieceMonitoring.beaconID(fromIdentifier: NearbyPieceMonitoring.identifier(uuid: uuid)) == nil)
-        #expect(NearbyPieceMonitoring.beaconID(fromIdentifier: "other") == nil)
+    func readsBeaconFromIdentifier() throws {
+        let beacon = try #require(catalog.beacons.first { $0.beaconId == 14 })
+        let identifier = NearbyPieceMonitoring.identifier(for: beacon)
+        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: identifier) == DetectedBeacon(beacon))
+
+        let moved = Beacon(beaconId: 14, uuid: beacon.uuid, major: beacon.major, minor: beacon.minor + 1)
+        #expect(NearbyPieceMonitoring.identifier(for: moved) != identifier)
+
+        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: NearbyPieceMonitoring.identifier(uuid: uuid)) == nil)
+        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: "beacon-14") == nil)
+        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: "other") == nil)
     }
 
     /// ビーコン 1 台の条件の範囲に入ったら、そのピースを知らせる
     @Test
     func notifiesPieceForBeaconCondition() {
-        let event = BeaconRegionEvent(identifier: "beacon-1", isInside: true, beacon: nil)
+        let event = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-6000", isInside: true, beacon: nil)
         let piece = NearbyPieceMonitoring.pieceToNotify(for: event, catalog: catalog, collectedPieceIDs: [], isAppActive: false)
         #expect(piece?.name == "函館山")
     }
@@ -100,14 +108,14 @@ struct NearbyPieceMonitoringTests {
     /// 獲得済みのピース・範囲から出たとき・アプリが前面のとき・同梱データに無いビーコンでは知らせない
     @Test
     func doesNotNotify() {
-        let inside = BeaconRegionEvent(identifier: "beacon-0", isInside: true, beacon: nil)
+        let inside = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-5000", isInside: true, beacon: nil)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: inside, catalog: catalog, collectedPieceIDs: [0], isAppActive: false) == nil)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: inside, catalog: catalog, collectedPieceIDs: [], isAppActive: true) == nil)
 
-        let outside = BeaconRegionEvent(identifier: "beacon-0", isInside: false, beacon: nil)
+        let outside = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-5000", isInside: false, beacon: nil)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: outside, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
 
-        let unknownBeacon = BeaconRegionEvent(identifier: "beacon-99", isInside: true, beacon: nil)
+        let unknownBeacon = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-4000", isInside: true, beacon: nil)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: unknownBeacon, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
 
         let notInCatalog = BeaconRegionEvent(
@@ -137,7 +145,9 @@ struct NearbyPieceAlertPreferenceTests {
     /// 既定はオフ。切り替えたら端末に保存し、次に読んだときも同じ値
     @Test
     func storesValue() throws {
-        let defaults = try #require(UserDefaults(suiteName: "NearbyPieceAlertPreferenceTests-\(UUID().uuidString)"))
+        let suiteName = "NearbyPieceAlertPreferenceTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let preference = NearbyPieceAlertPreference(defaults: defaults)
         #expect(!preference.isEnabled)
         #expect(!preference.hasStoredValue)

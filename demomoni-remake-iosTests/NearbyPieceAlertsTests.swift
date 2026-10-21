@@ -54,13 +54,16 @@ private final class StubAlwaysSession: LocationSession {
 private final class StubPieceNotifier: PieceNotifier {
     var isAllowed: Bool
     private(set) var posted: [PieceNotificationContent] = []
+    /// 通知の許可を確かめたときに呼ぶ（確かめる前に何が済んでいるかを見るため）
+    var onCheckAuthorization: (() -> Void)?
 
     init(isAllowed: Bool) {
         self.isAllowed = isAllowed
     }
 
     func areNotificationsAllowed() async -> Bool {
-        isAllowed
+        onCheckAuthorization?()
+        return isAllowed
     }
 
     func post(_ notification: PieceNotificationContent) async {
@@ -73,6 +76,16 @@ private final class StubPieceNotifier: PieceNotifier {
 @Suite(.timeLimit(.minutes(1)))
 struct NearbyPieceAlertsTests {
     private let catalog = Catalog.bundled
+
+    /// ピースのビーコン 1 台の条件の identifier
+    private func identifier(pieceID: Int) throws -> String {
+        NearbyPieceMonitoring.identifier(for: try #require(catalog.beacons.first { $0.beaconId == pieceID }))
+    }
+
+    /// ピースのビーコン 1 台の条件の範囲に入った出来事
+    private func insideEvent(pieceID: Int) throws -> BeaconRegionEvent {
+        BeaconRegionEvent(identifier: try identifier(pieceID: pieceID), isInside: true, beacon: nil)
+    }
 
     private func makeAlerts(
         isEnabled: Bool,
@@ -119,10 +132,42 @@ struct NearbyPieceAlertsTests {
         await alerts.refresh()
         #expect(alerts.isMonitoring)
         #expect(monitor.activeSessionCount == 1)
-        #expect(monitor.conditions?.map(\.identifier) == ["beacon-3"])
+        #expect(monitor.conditions?.map(\.identifier) == [try identifier(pieceID: 3)])
 
         await alerts.refresh()
         #expect(monitor.sessions.count == 1)
+    }
+
+    /// バックグラウンドで起こされたときに出来事を受け取れるよう、通知の許可を確かめる（`await` する）前に session を持つ
+    @Test
+    func holdsSessionBeforeCheckingNotificationAuthorization() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let notifier = StubPieceNotifier(isAllowed: true)
+        var sessionsWhenChecked: Int?
+        notifier.onCheckAuthorization = { sessionsWhenChecked = monitor.activeSessionCount }
+        let alerts = makeAuthorizedAlerts(monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
+
+        await alerts.refresh()
+        #expect(sessionsWhenChecked == 1)
+    }
+
+    /// 獲得が進んだら、決め直したときに条件からそのピースを外す。未獲得が上限を超える間は UUID ごと、収まったら 1 台ずつにする
+    @Test
+    func updatesConditionsAfterCollecting() async throws {
+        let container = try ModelContainer.demomoni(inMemory: true)
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: container)
+
+        await alerts.refresh()
+        #expect(monitor.conditions?.count == 1)
+        #expect(monitor.conditions?.first?.minor == nil)
+
+        let collected = catalog.pieces.map(\.id).prefix(catalog.pieces.count - NearbyPieceMonitoring.conditionLimit)
+        try PieceCollection(context: container.mainContext).collectAll(pieceIDs: collected, at: .now)
+        await alerts.refresh()
+        #expect(monitor.conditions?.count == NearbyPieceMonitoring.conditionLimit)
+        #expect(monitor.conditions?.allSatisfy { $0.minor != nil } == true)
+        #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: collected[0])) } == false)
     }
 
     /// オンでも、位置情報が「常に」でない・通知が許可されていなければ見張らない（条件を外し、session を持たない）
@@ -161,7 +206,9 @@ struct NearbyPieceAlertsTests {
     /// 前にオンにしたことがあれば、オフのまま起動したときも条件を外す（CLMonitor の条件はアプリを終えても残る）
     @Test
     func removesConditionsWhenLaunchedDisabled() async throws {
-        let defaults = try #require(UserDefaults(suiteName: "NearbyPieceAlertsTests-\(UUID().uuidString)"))
+        let suiteName = "NearbyPieceAlertsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         defaults.set(false, forKey: NearbyPieceAlertPreference.key)
         let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAlerts(
@@ -196,7 +243,7 @@ struct NearbyPieceAlertsTests {
         let notifier = StubPieceNotifier(isAllowed: true)
         let alerts = makeAuthorizedAlerts(notifier: notifier, container: container)
 
-        await alerts.handle(BeaconRegionEvent(identifier: "beacon-2", isInside: true, beacon: nil))
+        await alerts.handle(try insideEvent(pieceID: 2))
         #expect(notifier.posted.map(\.identifier) == ["piece-2"])
         #expect(try PieceCollection(context: container.mainContext).collectedPieceIDs().isEmpty)
     }
@@ -206,13 +253,13 @@ struct NearbyPieceAlertsTests {
     func doesNotPostNotification() async throws {
         let container = try ModelContainer.demomoni(inMemory: true)
         try PieceCollection(context: container.mainContext).collect(pieceID: 2, at: .now)
-        let event = BeaconRegionEvent(identifier: "beacon-2", isInside: true, beacon: nil)
+        let event = try insideEvent(pieceID: 2)
 
         let collectedNotifier = StubPieceNotifier(isAllowed: true)
         await makeAuthorizedAlerts(notifier: collectedNotifier, container: container).handle(event)
         #expect(collectedNotifier.posted.isEmpty)
 
-        let otherEvent = BeaconRegionEvent(identifier: "beacon-3", isInside: true, beacon: nil)
+        let otherEvent = try insideEvent(pieceID: 3)
         let activeNotifier = StubPieceNotifier(isAllowed: true)
         await makeAuthorizedAlerts(notifier: activeNotifier, container: container, isAppActive: true).handle(otherEvent)
         #expect(activeNotifier.posted.isEmpty)
