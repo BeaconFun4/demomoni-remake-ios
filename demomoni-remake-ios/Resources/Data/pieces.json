@@ -19,6 +19,306 @@
             "longitude": "140.704444",
             "area": "元町・函館山",
             "image": "piece1"
+        },
+        {
+            "id": 2,
+            "name": "五稜郭タワー",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.794500",
+            "longitude": "140.753900",
+            "area": "五稜郭",
+            "image": "piece2"
+        },
+        {
+            "id": 3,
+            "name": "五稜郭公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.796900",
+            "longitude": "140.757000",
+            "area": "五稜郭",
+            "image": "piece3"
+        },
+        {
+            "id": 4,
+            "name": "箱館奉行所",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.797300",
+            "longitude": "140.756600",
+            "area": "五稜郭",
+            "image": "piece4"
+        },
+        {
+            "id": 5,
+            "name": "北海道立函館美術館",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.795100",
+            "longitude": "140.757600",
+            "area": "五稜郭",
+            "image": "piece5"
+        },
+        {
+            "id": 6,
+            "name": "函館市中央図書館",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.792500",
+            "longitude": "140.754700",
+            "area": "五稜郭",
+            "image": "piece6"
+        },
+        {
+            "id": 7,
+            "name": "千代台公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.788900",
+            "longitude": "140.745400",
+            "area": "五稜郭",
+            "image": "piece7"
+        },
+        {
+            "id": 8,
+            "name": "金森赤レンガ倉庫",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.767100",
+            "longitude": "140.717900",
+            "area": "ベイエリア",
+            "image": "piece8"
+        },
+        {
+            "id": 9,
+            "name": "函館市地域交流まちづくりセンター",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.765000",
+            "longitude": "140.716000",
+            "area": "ベイエリア",
+            "image": "piece9"
+        },
+        {
+            "id": 10,
+            "name": "函館朝市",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.773100",
+            "longitude": "140.726200",
+            "area": "函館駅前",
+            "image": "piece10"
+        },
+        {
+            "id": 11,
+            "name": "函館駅",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.773700",
+            "longitude": "140.726600",
+            "area": "函館駅前",
+            "image": "piece11"
+        },
+        {
+            "id": 12,
+            "name": "摩周丸",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.774500",
+            "longitude": "140.724000",
+            "area": "函館駅前",
+            "image": "piece12"
+        },
+        {
+            "id": 13,
+            "name": "八幡坂",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.766000",
+            "longitude": "140.713900",
+            "area": "元町・函館山",
+            "image": "piece13"
+        },
+        {
+            "id": 14,
+            "name": "旧函館区公会堂",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.764400",
+            "longitude": "140.711000",
+            "area": "元町・函館山",
+            "image": "piece15"
+        },
+        {
+            "id": 15,
+            "name": "函館ハリストス正教会",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.763700",
+            "longitude": "140.712600",
+            "area": "元町・函館山",
+            "image": "piece16"
+        },
+        {
+            "id": 16,
+            "name": "カトリック元町教会",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.763300",
+            "longitude": "140.713500",
+            "area": "元町・函館山",
+            "image": "piece17"
+        },
+        {
+            "id": 17,
+            "name": "函館公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.759800",
+            "longitude": "140.717500",
+            "area": "元町・函館山",
+            "image": "piece18"
+        },
+        {
+            "id": 18,
+            "name": "立待岬",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.749000",
+            "longitude": "140.724000",
+            "area": "元町・函館山",
+            "image": "piece19"
+        },
+        {
+            "id": 19,
+            "name": "啄木小公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.768600",
+            "longitude": "140.743200",
+            "area": "大森浜",
+            "image": "piece20"
+        },
+        {
+            "id": 20,
+            "name": "湯の川温泉",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.779900",
+            "longitude": "140.789800",
+            "area": "湯の川",
+            "image": "piece21"
+        },
+        {
+            "id": 21,
+            "name": "函館市熱帯植物園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.775200",
+            "longitude": "140.800800",
+            "area": "湯の川",
+            "image": "piece22"
+        },
+        {
+            "id": 22,
+            "name": "香雪園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.795600",
+            "longitude": "140.792900",
+            "area": "湯の川",
+            "image": "piece23"
+        },
+        {
+            "id": 23,
+            "name": "トラピスチヌ修道院",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.789000",
+            "longitude": "140.818000",
+            "area": "湯の川",
+            "image": "piece24"
+        },
+        {
+            "id": 24,
+            "name": "大沼公園",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.979000",
+            "longitude": "140.669000",
+            "area": "大沼",
+            "image": "piece25"
+        },
+        {
+            "id": 25,
+            "name": "大沼国際交流プラザ",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.978900",
+            "longitude": "140.670300",
+            "area": "大沼",
+            "image": "piece26"
+        },
+        {
+            "id": 26,
+            "name": "東大沼キャンプ場",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.990000",
+            "longitude": "140.705000",
+            "area": "大沼",
+            "image": "piece27"
+        },
+        {
+            "id": 27,
+            "name": "じゅんさい沼",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.983000",
+            "longitude": "140.637000",
+            "area": "大沼",
+            "image": "piece28"
+        },
+        {
+            "id": 28,
+            "name": "新函館北斗駅",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.904600",
+            "longitude": "140.648700",
+            "area": "北斗",
+            "image": "piece29"
+        },
+        {
+            "id": 29,
+            "name": "トラピスト修道院",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.851000",
+            "longitude": "140.539000",
+            "area": "北斗",
+            "image": "piece30"
+        },
+        {
+            "id": 30,
+            "name": "きじひき高原",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.889000",
+            "longitude": "140.605000",
+            "area": "北斗",
+            "image": "piece31"
+        },
+        {
+            "id": 31,
+            "name": "北斗市総合文化センター",
+            "hasGot": false,
+            "date": "yyyy/mm/dd",
+            "latitude": "41.823600",
+            "longitude": "140.653200",
+            "area": "北斗",
+            "image": "piece32"
         }
     ]
 }

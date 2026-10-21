@@ -11,6 +11,186 @@
             "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
             "major": 0,
             "minor": 6000
+        },
+        {
+            "beaconId": 2,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 7000
+        },
+        {
+            "beaconId": 3,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 8000
+        },
+        {
+            "beaconId": 4,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 9000
+        },
+        {
+            "beaconId": 5,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 10000
+        },
+        {
+            "beaconId": 6,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 11000
+        },
+        {
+            "beaconId": 7,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 12000
+        },
+        {
+            "beaconId": 8,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 13000
+        },
+        {
+            "beaconId": 9,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 14000
+        },
+        {
+            "beaconId": 10,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 15000
+        },
+        {
+            "beaconId": 11,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 16000
+        },
+        {
+            "beaconId": 12,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 17000
+        },
+        {
+            "beaconId": 13,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 18000
+        },
+        {
+            "beaconId": 14,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 19000
+        },
+        {
+            "beaconId": 15,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 20000
+        },
+        {
+            "beaconId": 16,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 21000
+        },
+        {
+            "beaconId": 17,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 22000
+        },
+        {
+            "beaconId": 18,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 23000
+        },
+        {
+            "beaconId": 19,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 24000
+        },
+        {
+            "beaconId": 20,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 25000
+        },
+        {
+            "beaconId": 21,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 26000
+        },
+        {
+            "beaconId": 22,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 27000
+        },
+        {
+            "beaconId": 23,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 28000
+        },
+        {
+            "beaconId": 24,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 29000
+        },
+        {
+            "beaconId": 25,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 30000
+        },
+        {
+            "beaconId": 26,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 31000
+        },
+        {
+            "beaconId": 27,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 32000
+        },
+        {
+            "beaconId": 28,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 33000
+        },
+        {
+            "beaconId": 29,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 34000
+        },
+        {
+            "beaconId": 30,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 35000
+        },
+        {
+            "beaconId": 31,
+            "uuid": "E8C65602-6D9C-44EF-9734-B2D3EF1CD961",
+            "major": 0,
+            "minor": 36000
         }
     ]
 }
