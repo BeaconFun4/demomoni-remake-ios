@@ -285,3 +285,81 @@ struct BeaconDetectorTests {
         #expect(LocationPermission(.denied, accuracy: .reducedAccuracy) == .denied)
     }
 }
+
+/// 外から入れる擬似検知（デバッグモード用の `injectDetection(pieceID:)`）
+@MainActor
+struct BeaconDetectorInjectionTests {
+    private let catalog = Catalog.bundled
+
+    /// 探している間に入れると、すぐにビーコンを見つけたときと同じく `detectedPiece` に入る
+    @Test
+    func injectionWhileScanningIsDeliveredImmediately() {
+        let detector = BeaconDetector(catalog: catalog, scanner: StubBeaconScanner(permission: .authorized))
+        detector.start()
+
+        #expect(detector.injectDetection(pieceID: 2))
+        #expect(detector.detectedPiece?.name == "五稜郭タワー")
+    }
+
+    /// 探していないときに入れると持っておき、次に探し始めたときに入れる（さがすタブに切り替わったとき）
+    @Test
+    func injectionBeforeStartIsDeliveredOnStart() {
+        let detector = BeaconDetector(catalog: catalog, scanner: StubBeaconScanner(permission: .authorized))
+
+        #expect(detector.injectDetection(pieceID: 1))
+        #expect(detector.detectedPiece == nil)
+
+        detector.start()
+        #expect(detector.detectedPiece?.name == "函館山")
+    }
+
+    /// `stop()` した後に入れても、次の `start()` で入る。一度入れたものは、また探し始めても入れ直さない
+    @Test
+    func injectionIsDeliveredOnlyOnce() {
+        let detector = BeaconDetector(catalog: catalog, scanner: StubBeaconScanner(permission: .authorized))
+        detector.start()
+        detector.stop()
+
+        detector.injectDetection(pieceID: 0)
+        detector.start()
+        #expect(detector.detectedPiece?.name == "元町公園")
+
+        detector.clearDetectedPiece()
+        detector.stop()
+        detector.start()
+        #expect(detector.detectedPiece == nil)
+    }
+
+    /// 位置情報の許可が無くても入れる（擬似検知なので、ranging は始めない）
+    @Test(arguments: [LocationPermission.notDetermined, .denied, .restricted, .reducedAccuracy])
+    func injectionIgnoresPermission(permission: LocationPermission) {
+        let scanner = StubBeaconScanner(permission: permission)
+        let detector = BeaconDetector(catalog: catalog, scanner: scanner)
+
+        detector.injectDetection(pieceID: 0)
+        detector.start()
+        #expect(detector.detectedPiece?.name == "元町公園")
+        #expect(scanner.startCount == 0)
+    }
+
+    /// 持っている間にもう一度入れたら、後のほうだけを入れる
+    @Test
+    func laterInjectionReplacesPendingOne() {
+        let detector = BeaconDetector(catalog: catalog, scanner: StubBeaconScanner(permission: .authorized))
+
+        detector.injectDetection(pieceID: 0)
+        detector.injectDetection(pieceID: 1)
+        detector.start()
+        #expect(detector.detectedPiece?.name == "函館山")
+    }
+
+    /// 同梱データに無いピースは入れない
+    @Test
+    func unknownPieceIsIgnored() {
+        let detector = BeaconDetector(catalog: catalog, scanner: StubBeaconScanner(permission: .authorized))
+        detector.start()
+
+        #expect(!detector.injectDetection(pieceID: 99))
+        #expect(detector.detectedPiece == nil)
+    }
+}
