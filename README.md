@@ -12,6 +12,7 @@
 構成は [template-app-ios](https://github.com/shilokuma-inc/template-app-ios) にそろえています。
 
 - 署名情報・Bundle ID・バージョン・Deployment Target は [Configs/Project.xcconfig](Configs/Project.xcconfig) に集約しています（pbxproj には直接書かない）
+- Debug 構成は [Configs/Debug.xcconfig](Configs/Debug.xcconfig) で、Bundle ID `jp.shilokuma.Demomoni-debug`・下部に「debug」と書いたアイコン（`AppIcon-Debug`）・ホーム画面の名前「でももに！β」にしています。デバッグモード入りの版を、App Store 版（Release 構成の `jp.shilokuma.Demomoni`）と別のアプリとして配るためです
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
 - ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
