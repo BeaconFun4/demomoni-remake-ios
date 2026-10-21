@@ -31,8 +31,9 @@ final class CoreLocationBeaconScanner: NSObject, BeaconScanner {
         LocationPermission(manager.authorizationStatus, accuracy: manager.accuracyAuthorization)
     }
 
-    func requestPermission() {
-        manager.requestWhenInUseAuthorization()
+    func makeSession() -> any LocationSession {
+        // 正確な位置情報は求めない（fullAccuracyPurposeKey を渡さない）。オフのときは今までどおり画面で案内する
+        CLServiceSession(authorization: .whenInUse)
     }
 
     func startRanging(uuids: Set<UUID>) {
@@ -74,3 +75,5 @@ extension CoreLocationBeaconScanner: CLLocationManagerDelegate {
         continuation.yield(.ranged(detected))
     }
 }
+
+extension CLServiceSession: LocationSession {}

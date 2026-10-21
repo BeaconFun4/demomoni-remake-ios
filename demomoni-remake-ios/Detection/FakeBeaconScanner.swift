@@ -28,7 +28,9 @@ final class FakeBeaconScanner: BeaconScanner {
         continuation.finish()
     }
 
-    func requestPermission() {}
+    func makeSession() -> any LocationSession {
+        FakeLocationSession()
+    }
 
     func startRanging(uuids: Set<UUID>) {
         task?.cancel()
@@ -50,4 +52,9 @@ final class FakeBeaconScanner: BeaconScanner {
         task?.cancel()
         task = nil
     }
+}
+
+/// 擬似検知の session。位置情報を使わないので何もしない
+final class FakeLocationSession: LocationSession {
+    func invalidate() {}
 }

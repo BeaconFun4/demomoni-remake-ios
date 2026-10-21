@@ -58,6 +58,12 @@ nonisolated enum BeaconScanEvent: Equatable, Sendable {
     case ranged([DetectedBeacon])
 }
 
+/// 位置情報を使う間だけ持つ session（実機では `CLServiceSession`）。使い終えたら `invalidate()` する
+protocol LocationSession: AnyObject {
+    /// session を終える
+    func invalidate()
+}
+
 /// iBeacon を探す仕組み。実機では CoreLocation（`CoreLocationBeaconScanner`）、
 /// UI テストと PR の撮影では擬似検知（`FakeBeaconScanner`）に差し替える
 protocol BeaconScanner: AnyObject {
@@ -65,8 +71,8 @@ protocol BeaconScanner: AnyObject {
     var permission: LocationPermission { get }
     /// 許可の変化と見つけたビーコン。受け取るのは 1 か所だけ（`BeaconDetector`）
     var events: AsyncStream<BeaconScanEvent> { get }
-    /// 位置情報（使用中）の許可を尋ねる
-    func requestPermission()
+    /// 位置情報（使用中）の session を始める。まだ許可を尋ねていなければ、始めたときに尋ねる
+    func makeSession() -> any LocationSession
     /// UUID ごとに iBeacon の ranging を始める
     func startRanging(uuids: Set<UUID>)
     /// ranging をやめる
