@@ -1,6 +1,8 @@
 name: Upload
 
 # develop / release/** への push で Archive → IPA Export → App Store Connect へアップロードする。
+# App Store 版（Release 構成の jp.shilokuma.Demomoni）と、デバッグモード入りの版（Debug 構成の jp.shilokuma.Demomoni-debug）を
+# 別の job で上げる。片方が失敗しても、もう片方は止めない。
 # 作業ブランチを TestFlight で確認したいときは、手動実行（workflow_dispatch）でそのブランチを選ぶ。
 # 作業ブランチの push ごとに上げると、App Store Connect の 24 時間あたりのアップロード上限に当たるため自動では上げない。
 on:
@@ -27,4 +29,17 @@ jobs:
     uses: ./.github/workflows/_archive.yml
     with:
       upload: true
+    secrets: inherit
+
+  upload-debug:
+    # デバッグモード入りの版。App Store Connect に jp.shilokuma.Demomoni-debug のアプリが無いうちは、
+    # アップロードの前に止まって作成手順を Job Summary に出す（App Store 版の job は止まらない）。
+    # リポジトリ変数 ENABLE_DEBUG_DELIVERY=false でこの job だけスキップする
+    if: vars.ENABLE_DELIVERY != 'false' && vars.ENABLE_DEBUG_DELIVERY != 'false'
+    uses: ./.github/workflows/_archive.yml
+    with:
+      upload: true
+      scheme: demomoni-remake-ios-debug
+      configuration: Debug
+      app-name: でももに！β
     secrets: inherit

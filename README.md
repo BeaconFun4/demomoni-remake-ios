@@ -71,6 +71,10 @@ Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml
 template-app-ios と同じ構成で、App Store Connect の API Key で認証します（Apple ID は使いません）。
 
 - Upload は Archive → IPA Export → App Store Connect へのアップロードまで行います。`develop` / `release/**` への push（PR のマージ）のたびに、TestFlight にビルドが上がります
+- Upload は 2 つのアプリを別の job で上げます。片方が失敗しても、もう片方は止まりません
+  - `upload`: App Store 版（スキーム `demomoni-remake-ios` を Release 構成で Archive した `jp.shilokuma.Demomoni`）
+  - `upload-debug`: デバッグモード入りの版（スキーム `demomoni-remake-ios-debug` を Debug 構成で Archive した `jp.shilokuma.Demomoni-debug`。アイコンの下部に「debug」、ホーム画面の名前は「でももに！β」）
+- デバッグモード入りの版を配るには、担当者が App Store Connect に `jp.shilokuma.Demomoni-debug` のアプリを作ります（名前の候補は「でももに！β」。App Store 全体で使用済みなら別の名前にします）。アプリが無いうちは `upload-debug` がアップロードの前に止まり、入力する値を Job Summary に出します。作った後は再実行します
 - ビルド番号は、アップロードのときに App Store Connect の最新ビルドを見て Xcode が自動で増やします。`CURRENT_PROJECT_VERSION` は手で上げません。バージョン（`MARKETING_VERSION`）はリリースのときに [Configs/Project.xcconfig](Configs/Project.xcconfig) で上げます
 - Archive / Upload は Actions タブから手動でも実行できます（Run workflow）。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
 - 実行中の Upload は、次の push が来ても取り消しません（途中で止めると App Store Connect に中途半端なビルドが残るため）
@@ -92,6 +96,7 @@ Secrets は BeaconFun4 の Organization に登録してあります（Settings �
 |---|---|
 | `TESTFLIGHT_INTERNAL_TESTERS` | TestFlight の内部テスターにするメールアドレス（カンマ区切り）。Upload が内部テストグループ「Internal Testers」を作って追加し、以降のビルドは処理が終わりしだい配信されます。空なら何もしません |
 | `ENABLE_DELIVERY` | `false` にすると Upload をスキップします。未設定なら実行します |
+| `ENABLE_DEBUG_DELIVERY` | `false` にすると、Upload のうちデバッグモード入りの版（`upload-debug`）だけをスキップします。未設定なら実行します |
 
 TestFlight の配信先を用意するには、担当者が変数 `TESTFLIGHT_INTERNAL_TESTERS` を、BeaconFun4 の Organization かこのリポジトリの Settings → Secrets and variables → Actions → **Variables** に登録します。
 テスターは App Store Connect のユーザーである必要があります。メールアドレスはリポジトリ・Issue・PR に書きません（このリポジトリは public です）。
