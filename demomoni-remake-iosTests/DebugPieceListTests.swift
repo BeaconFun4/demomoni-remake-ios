@@ -34,6 +34,16 @@ struct DebugPieceListTests {
         #expect(rows.map(\.title) == ["No.14 ピース0", "ピース9"])
     }
 
+    /// 擬似検知で選べるのは、まだ獲得していないピースだけ（盤の番号の順）
+    @Test
+    func detectableRowsExcludeCollectedPieces() {
+        let pieces = [piece(id: 0, image: "piece14"), piece(id: 1, image: "piece1"), piece(id: 2, image: "piece2")]
+        let rows = DebugPieceList.detectableRows(pieces: pieces, collectedPieceIDs: [1])
+        #expect(rows.map(\.piece.id) == [2, 0])
+        #expect(rows.allSatisfy { !$0.isCollected })
+        #expect(DebugPieceList.detectableRows(pieces: pieces, collectedPieceIDs: [0, 1, 2]).isEmpty)
+    }
+
     /// 同梱データでは 32 行で、1 行目は No.1
     @Test
     func bundledPiecesMakeThirtyTwoRows() {
