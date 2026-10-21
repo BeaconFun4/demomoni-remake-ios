@@ -53,9 +53,9 @@ struct BeaconDetectorTests {
         DetectedBeacon(uuid: uuid, major: 0, minor: 5000)
     }
 
-    /// 同梱データに無いビーコン
+    /// 同梱データに無いビーコン（minor は 5000 + id × 1000 なので 4000 はどの id にも当たらない）
     private var unknown: DetectedBeacon {
-        DetectedBeacon(uuid: uuid, major: 0, minor: 7000)
+        DetectedBeacon(uuid: uuid, major: 0, minor: 4000)
     }
 
     /// 許可をまだ尋ねていなければ、探し始めるときに尋ね、許可されたら ranging を始める
@@ -257,7 +257,7 @@ struct BeaconDetectorTests {
     func liveDetectorUsesFakeScannerOnlyForKnownBeaconID() {
         #expect(BeaconDetector.live(options: LaunchOptions(fakeBeaconID: 1), catalog: catalog).permission == .authorized)
         #expect(BeaconDetector.live(options: LaunchOptions(fakeBeaconID: 1), catalog: catalog).usesFakeScanner)
-        #expect(!BeaconDetector.live(options: LaunchOptions(fakeBeaconID: 9), catalog: catalog).usesFakeScanner)
+        #expect(!BeaconDetector.live(options: LaunchOptions(fakeBeaconID: 99), catalog: catalog).usesFakeScanner)
         #expect(!BeaconDetector.live(options: LaunchOptions(), catalog: catalog).usesFakeScanner)
     }
 
