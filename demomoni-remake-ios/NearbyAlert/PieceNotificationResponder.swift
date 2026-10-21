@@ -26,7 +26,7 @@ final class PieceNotificationResponder: NSObject, UNUserNotificationCenterDelega
         await show(tab)
     }
 
-    /// タブを切り替える。シート（なぞなぞの詳細・ピース詳細など）が開いていても閉じず、タブだけを切り替える
+    /// タブを切り替える。ほかのタブで開いた詳細（なぞなぞ・ピース詳細。NavigationStack で push）はそのまま残し、タブだけを切り替える
     private func show(_ tab: AppTab) {
         tabSelection.selected = tab
     }
