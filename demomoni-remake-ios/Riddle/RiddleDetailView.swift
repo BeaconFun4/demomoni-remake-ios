@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// なぞなぞの詳細。問題文を出し、「ヒントをみる」でヒントを出す。
-/// 元のデータに答えが無いので、答え合わせはしない
+/// 答え（`Riddle.answer`）はまだ出さない
 struct RiddleDetailView: View {
     let riddle: Riddle
 
