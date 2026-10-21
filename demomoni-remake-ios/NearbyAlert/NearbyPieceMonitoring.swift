@@ -37,7 +37,7 @@ nonisolated struct PieceNotificationContent: Equatable, Sendable {
 }
 
 /// 位置情報の許可（`CLAuthorizationStatus` を写した値）。判定を CoreLocation から切り出してテストするために使う
-nonisolated enum LocationAuthorization: Sendable, CaseIterable {
+nonisolated enum LocationAuthorization: Sendable {
     case notDetermined
     case restricted
     case denied
