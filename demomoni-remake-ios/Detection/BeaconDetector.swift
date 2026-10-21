@@ -23,14 +23,25 @@ final class BeaconDetector {
     @ObservationIgnored private var wantsScanning = false
     /// 外から入れた擬似検知のうち、まだ `detectedPiece` に入れていないもの（`injectDetection(pieceID:)`）
     @ObservationIgnored private var injectedPiece: Piece?
+    /// `scanner.events` を受け続ける処理。この検知が無くなったら cancel する
+    @ObservationIgnored private var eventTask: Task<Void, Never>?
+    /// 出来事を 1 つ扱い終えるたびに呼ぶ（テストで、出来事が届いたのを待つため）
+    @ObservationIgnored var onEventHandled: ((BeaconScanEvent) -> Void)?
 
     init(catalog: Catalog, scanner: any BeaconScanner) {
         self.catalog = catalog
         self.scanner = scanner
         permission = scanner.permission
-        scanner.onEvent = { [weak self] event in
-            self?.handle(event)
+        // MainActor で受けるので、デリゲートがどのスレッドで呼ばれても handle(_:) は MainActor で動く
+        eventTask = Task { [weak self, events = scanner.events] in
+            for await event in events {
+                self?.handle(event)
+            }
         }
+    }
+
+    isolated deinit {
+        eventTask?.cancel()
     }
 
     /// 探し始める。許可をまだ尋ねていなければ尋ね、許可されたら探す。
@@ -95,11 +106,11 @@ final class BeaconDetector {
                 endRanging()
             }
         case .ranged(let beacons):
-            guard isScanning, let piece = Self.firstPiece(in: beacons, catalog: catalog) else {
-                return
+            if isScanning, let piece = Self.firstPiece(in: beacons, catalog: catalog) {
+                detectedPiece = piece
             }
-            detectedPiece = piece
         }
+        onEventHandled?(event)
     }
 
     private func deliverInjectedPiece() {

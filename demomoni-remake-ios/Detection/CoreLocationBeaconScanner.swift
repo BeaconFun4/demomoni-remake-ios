@@ -7,17 +7,24 @@ import CoreLocation
 import Foundation
 
 /// `CLLocationManager` の ranging（`CLBeaconIdentityConstraint`）で iBeacon を探す。
-/// MainActor で作るので、デリゲートはメインスレッドで呼ばれる
+/// デリゲートは出来事を `events` に流すだけにし、どのスレッドで呼ばれても受け取る側（MainActor）で扱えるようにする
 final class CoreLocationBeaconScanner: NSObject, BeaconScanner {
-    var onEvent: (@MainActor (BeaconScanEvent) -> Void)?
+    let events: AsyncStream<BeaconScanEvent>
+    /// `events` に出来事を流す。Sendable なので、`nonisolated` のデリゲートから呼べる
+    nonisolated private let continuation: AsyncStream<BeaconScanEvent>.Continuation
 
     private let manager = CLLocationManager()
     /// ranging している制約
     private var constraints: [CLBeaconIdentityConstraint] = []
 
     override init() {
+        (events, continuation) = AsyncStream.makeStream(of: BeaconScanEvent.self)
         super.init()
         manager.delegate = self
+    }
+
+    deinit {
+        continuation.finish()
     }
 
     var permission: LocationPermission {
@@ -52,9 +59,7 @@ extension CoreLocationBeaconScanner: CLLocationManagerDelegate {
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         // 「正確な位置情報」を切り替えたときも、このメソッドが呼ばれる
         let permission = LocationPermission(manager.authorizationStatus, accuracy: manager.accuracyAuthorization)
-        MainActor.assumeIsolated {
-            onEvent?(.permissionChanged(permission))
-        }
+        continuation.yield(.permissionChanged(permission))
     }
 
     nonisolated func locationManager(
@@ -66,8 +71,6 @@ extension CoreLocationBeaconScanner: CLLocationManagerDelegate {
         let detected = beacons.map {
             DetectedBeacon(uuid: $0.uuid, major: $0.major.uint16Value, minor: $0.minor.uint16Value)
         }
-        MainActor.assumeIsolated {
-            onEvent?(.ranged(detected))
-        }
+        continuation.yield(.ranged(detected))
     }
 }

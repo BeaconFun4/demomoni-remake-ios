@@ -63,8 +63,8 @@ nonisolated enum BeaconScanEvent: Equatable, Sendable {
 protocol BeaconScanner: AnyObject {
     /// 今の位置情報の許可
     var permission: LocationPermission { get }
-    /// 許可の変化と見つけたビーコンを受け取る
-    var onEvent: (@MainActor (BeaconScanEvent) -> Void)? { get set }
+    /// 許可の変化と見つけたビーコン。受け取るのは 1 か所だけ（`BeaconDetector`）
+    var events: AsyncStream<BeaconScanEvent> { get }
     /// 位置情報（使用中）の許可を尋ねる
     func requestPermission()
     /// UUID ごとに iBeacon の ranging を始める
