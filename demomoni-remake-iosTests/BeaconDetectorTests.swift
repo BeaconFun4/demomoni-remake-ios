@@ -171,6 +171,33 @@ struct BeaconDetectorTests {
         #expect(scanner.activeSessionCount == 0)
     }
 
+    /// 許可を尋ねている間に拒否されたら、session を終える
+    @Test
+    func invalidatesSessionWhenPermissionIsDenied() async {
+        let scanner = StubBeaconScanner(permission: .notDetermined)
+        let detector = BeaconDetector(catalog: catalog, scanner: scanner)
+
+        detector.start()
+        #expect(scanner.activeSessionCount == 1)
+
+        await scanner.send(.permissionChanged(.denied), to: detector)
+        #expect(!detector.isScanning)
+        #expect(scanner.sessions.count == 1)
+        #expect(scanner.activeSessionCount == 0)
+    }
+
+    /// 探している間に検知が無くなったら、session を終える
+    @Test
+    func invalidatesSessionOnDeinit() {
+        let scanner = StubBeaconScanner(permission: .authorized)
+        var detector: BeaconDetector? = BeaconDetector(catalog: catalog, scanner: scanner)
+        detector?.start()
+        #expect(scanner.activeSessionCount == 1)
+
+        detector = nil
+        #expect(scanner.activeSessionCount == 0)
+    }
+
     /// `stop()` したら session を終える
     @Test
     func invalidatesSessionOnStop() {
