@@ -130,8 +130,10 @@ final class NearbyPieceAlerts {
                 session = monitor.makeAlwaysSession()
             }
             let collected = (try? PieceCollection(context: container.mainContext).collectedPieceIDs()) ?? []
-            await monitor.setConditions(NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected))
-            isMonitoring = true
+            // 位置情報の許可が無く CLMonitor を開けなかったときは、見張っていることにしない
+            isMonitoring = await monitor.setConditions(
+                NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected)
+            )
         } else {
             await monitor.removeAllConditions()
             session?.invalidate()

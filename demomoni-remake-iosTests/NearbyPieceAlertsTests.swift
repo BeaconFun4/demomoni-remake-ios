@@ -13,6 +13,8 @@ private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
     let events: AsyncStream<BeaconRegionEvent>
     var isAlwaysAuthorized: Bool
     var hasFullAccuracy = true
+    /// CLMonitor を開けるか（位置情報の許可が無い・未決定なら開けない）
+    var canOpenMonitor = true
     private(set) var alwaysAuthorizationRequests = 0
     private(set) var conditions: [MonitoredBeacon]?
     private(set) var removeAllCount = 0
@@ -39,13 +41,21 @@ private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
         return session
     }
 
-    func setConditions(_ conditions: [MonitoredBeacon]) async {
+    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool {
+        guard canOpenMonitor else {
+            return false
+        }
         self.conditions = conditions
+        return true
     }
 
-    func removeAllConditions() async {
+    func removeAllConditions() async -> Bool {
+        guard canOpenMonitor else {
+            return false
+        }
         conditions = nil
         removeAllCount += 1
+        return true
     }
 }
 
@@ -182,6 +192,23 @@ struct NearbyPieceAlertsTests {
         #expect(monitor.conditions?.count == NearbyPieceMonitoring.conditionLimit)
         #expect(monitor.conditions?.allSatisfy { $0.minor != nil } == true)
         #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: collected[0])) } == false)
+    }
+
+    /// CLMonitor を開けなかったら（位置情報の許可が無い・未決定）、見張っていることにしない
+    @Test
+    func doesNotMonitorWhenMonitorCannotOpen() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        monitor.canOpenMonitor = false
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
+
+        await alerts.refresh()
+        #expect(!alerts.isMonitoring)
+        #expect(monitor.conditions == nil)
+
+        monitor.canOpenMonitor = true
+        await alerts.refresh()
+        #expect(alerts.isMonitoring)
+        #expect(monitor.conditions?.isEmpty == false)
     }
 
     /// オンでも、位置情報が「常に」でない・通知が許可されていなければ見張らない（条件を外し、session を持たない）

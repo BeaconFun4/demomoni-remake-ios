@@ -36,6 +36,17 @@ nonisolated struct PieceNotificationContent: Equatable, Sendable {
     let pieceID: Int
 }
 
+/// 位置情報の許可（`CLAuthorizationStatus` を写した値）。判定を CoreLocation から切り出してテストするために使う
+nonisolated enum LocationAuthorization: Sendable, CaseIterable {
+    case notDetermined
+    case restricted
+    case denied
+    case always
+    case whenInUse
+    /// 今の SDK に無い値（`@unknown default`）
+    case unknown
+}
+
 /// 「アプリを閉じていても近くのピースを知らせる」の判定。CoreLocation・UserNotifications から切り出してテストする
 nonisolated enum NearbyPieceMonitoring {
     /// CLMonitor の名前。起動するたびに同じ名前で作り直すと、前に足した条件と出来事を受け取れる
@@ -77,6 +88,18 @@ nonisolated enum NearbyPieceMonitoring {
     /// 監視するか。スイッチがオンで、位置情報が「常に」・正確な位置情報がオン・通知が許可されているときだけ
     static func shouldMonitor(isEnabled: Bool, isLocationAlwaysAuthorized: Bool, areNotificationsAllowed: Bool) -> Bool {
         isEnabled && isLocationAlwaysAuthorized && areNotificationsAllowed
+    }
+
+    /// `CLMonitor` を開いてよいか。位置情報が「常に」か「使用中」のときだけ。
+    /// 許可が無い・未決定のときに開くと CoreLocation の中で assert する疑いがあり、TestFlight の 1.0 (4) で起動直後に `CLMonitor.init(_:)` の中で落ちた（#120）。
+    /// 許可が無ければ出来事も届かないので、開かなくても失うものは無い。分からない値（今後足される状態）も、安全な側に倒して開かない
+    static func canOpenMonitor(_ authorization: LocationAuthorization) -> Bool {
+        switch authorization {
+        case .always, .whenInUse:
+            true
+        case .notDetermined, .restricted, .denied, .unknown:
+            false
+        }
     }
 
     /// 見張る条件。まだ獲得していないピースのビーコンが上限に収まれば 1 台ずつ、
