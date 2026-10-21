@@ -76,14 +76,15 @@ struct CatalogTests {
         #expect(Set(identities).count == identities.count)
     }
 
-    /// 名所の配分は函館 24・大沼 4・北斗 4。名前は重複しない
+    /// 名所の配分は函館 24・大沼 4・北斗 4。函館のエリア名は決まった書き方だけを使い、名前は重複しない
     @Test
     func piecesAreSplitByRegion() throws {
         let catalog = try Catalog.load()
+        let hakodateAreas: Set = ["五稜郭", "元町・函館山", "ベイエリア", "函館駅前", "大森浜", "湯の川"]
         let areas = catalog.pieces.map(\.area)
+        #expect(areas.filter(hakodateAreas.contains).count == 24)
         #expect(areas.filter { $0 == "大沼" }.count == 4)
         #expect(areas.filter { $0 == "北斗" }.count == 4)
-        #expect(areas.filter { $0 != "大沼" && $0 != "北斗" }.count == 24)
         #expect(Set(catalog.pieces.map(\.name)).count == catalog.pieces.count)
     }
 
