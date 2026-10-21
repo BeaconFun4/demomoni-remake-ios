@@ -6,3 +6,13 @@
 //
 
 #include "Project.xcconfig"
+
+// Debug 構成のビルドは、App Store 版（jp.shilokuma.Demomoni）とは別のアプリとして TestFlight に配る（デバッグモード入り）。
+// テストターゲットも $(APP_BUNDLE_IDENTIFIER).Tests / .UITests として派生する
+APP_BUNDLE_IDENTIFIER = jp.shilokuma.Demomoni-debug
+
+// App Store 版と見分けるため、アイコンの下部に「debug」と書いたもの（scripts/make-debug-app-icon.swift で作る）
+APP_ICON_NAME = AppIcon-Debug
+
+// ホーム画面の名前も App Store 版と見分ける
+INFOPLIST_KEY_CFBundleDisplayName = でももに！β
