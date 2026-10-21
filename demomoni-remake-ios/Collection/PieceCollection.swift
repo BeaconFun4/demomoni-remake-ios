@@ -23,6 +23,22 @@ struct PieceCollection {
         return true
     }
 
+    /// まだ獲得していないピースをまとめて獲得済みにする（獲得済みのピースは日時・サインを残す）。
+    /// 1 回だけ保存するので、保存に失敗したら 1 件も獲得しない
+    /// - Returns: 今回はじめて獲得した件数
+    @discardableResult
+    func collectAll(pieceIDs: some Sequence<Int>, at date: Date) throws -> Int {
+        let missing = Set(pieceIDs).subtracting(try collectedPieceIDs())
+        guard !missing.isEmpty else {
+            return 0
+        }
+        for pieceID in missing.sorted() {
+            context.insert(CollectedPiece(pieceID: pieceID, collectedAt: date))
+        }
+        try saveOrRollback()
+        return missing.count
+    }
+
     /// ピースを獲得済みか
     func isCollected(pieceID: Int) throws -> Bool {
         try record(pieceID: pieceID) != nil
