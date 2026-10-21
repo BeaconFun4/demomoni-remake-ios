@@ -95,8 +95,8 @@
             "name": "函館市地域交流まちづくりセンター",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.769700",
-            "longitude": "140.720300",
+            "latitude": "41.765000",
+            "longitude": "140.716000",
             "area": "ベイエリア",
             "image": "piece9"
         },
@@ -185,8 +185,8 @@
             "name": "立待岬",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.753000",
-            "longitude": "140.718000",
+            "latitude": "41.749000",
+            "longitude": "140.724000",
             "area": "元町・函館山",
             "image": "piece19"
         },
@@ -272,11 +272,11 @@
         },
         {
             "id": 27,
-            "name": "流山温泉",
+            "name": "じゅんさい沼",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "42.014000",
-            "longitude": "140.620000",
+            "latitude": "41.983000",
+            "longitude": "140.637000",
             "area": "大沼",
             "image": "piece28"
         },
