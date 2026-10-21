@@ -10,14 +10,16 @@ import Testing
 
 /// テストから許可の変化と ranging の結果を送れる `BeaconScanner`
 private final class StubBeaconScanner: BeaconScanner {
-    var onEvent: (@MainActor (BeaconScanEvent) -> Void)?
+    let events: AsyncStream<BeaconScanEvent>
     var permission: LocationPermission
+    private let continuation: AsyncStream<BeaconScanEvent>.Continuation
     private(set) var permissionRequests = 0
     private(set) var rangingUUIDs: Set<UUID>?
     private(set) var startCount = 0
     private(set) var stopCount = 0
 
     init(permission: LocationPermission) {
+        (events, continuation) = AsyncStream.makeStream(of: BeaconScanEvent.self)
         self.permission = permission
     }
 
@@ -39,11 +41,25 @@ private final class StubBeaconScanner: BeaconScanner {
         if case .permissionChanged(let newPermission) = event {
             permission = newPermission
         }
-        onEvent?(event)
+        continuation.yield(event)
+    }
+}
+
+extension BeaconDetector {
+    /// `action` で送った出来事を、この検知が扱い終えるまで待つ（出来事は `AsyncStream` で後から届くため）
+    func handling(_ action: () -> Void) async {
+        await withCheckedContinuation { continuation in
+            onEventHandled = { [weak self] _ in
+                self?.onEventHandled = nil
+                continuation.resume()
+            }
+            action()
+        }
     }
 }
 
 @MainActor
+@Suite(.timeLimit(.minutes(1)))
 struct BeaconDetectorTests {
     private let uuid = UUID(uuidString: "E8C65602-6D9C-44EF-9734-B2D3EF1CD961")!
     private let catalog = Catalog.bundled
@@ -60,7 +76,7 @@ struct BeaconDetectorTests {
 
     /// 許可をまだ尋ねていなければ、探し始めるときに尋ね、許可されたら ranging を始める
     @Test
-    func requestsPermissionThenStartsRanging() {
+    func requestsPermissionThenStartsRanging() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
@@ -68,7 +84,7 @@ struct BeaconDetectorTests {
         #expect(scanner.permissionRequests == 1)
         #expect(!detector.isScanning)
 
-        scanner.send(.permissionChanged(.authorized))
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
         #expect(detector.permission == .authorized)
         #expect(detector.isScanning)
         #expect(scanner.rangingUUIDs == [uuid])
@@ -101,34 +117,34 @@ struct BeaconDetectorTests {
 
     /// 何度 `start()` しても、許可が何度届いても、ranging は 1 回だけ始める
     @Test
-    func startsRangingOnlyOnce() {
+    func startsRangingOnlyOnce() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
         detector.start()
         detector.start()
-        scanner.send(.permissionChanged(.authorized))
-        scanner.send(.permissionChanged(.authorized))
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
         detector.start()
         #expect(scanner.startCount == 1)
     }
 
     /// 許可を待っている間に `stop()` したら、その後に許可されても探さない
     @Test
-    func doesNotScanWhenStoppedWhileWaitingForPermission() {
+    func doesNotScanWhenStoppedWhileWaitingForPermission() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
         detector.start()
         detector.stop()
-        scanner.send(.permissionChanged(.authorized))
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
         #expect(!detector.isScanning)
         #expect(scanner.startCount == 0)
     }
 
     /// `stop()` の後にもう一度 `start()` すると、また見つけられる（タブを行き来したとき）
     @Test
-    func restartsAfterStop() {
+    func restartsAfterStop() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
@@ -137,56 +153,56 @@ struct BeaconDetectorTests {
         detector.start()
         #expect(scanner.startCount == 2)
 
-        scanner.send(.ranged([motomachi]))
+        await detector.handling { scanner.send(.ranged([motomachi])) }
         #expect(detector.detectedPiece?.name == "元町公園")
     }
 
     /// 探している間に「正確な位置情報」をオフにされたら探すのをやめ、オンに戻されたら探し直す
     @Test
-    func pausesWhileAccuracyIsReduced() {
+    func pausesWhileAccuracyIsReduced() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        scanner.send(.permissionChanged(.reducedAccuracy))
+        await detector.handling { scanner.send(.permissionChanged(.reducedAccuracy)) }
         #expect(detector.permission == .reducedAccuracy)
         #expect(!detector.isScanning)
 
-        scanner.send(.permissionChanged(.authorized))
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
         #expect(detector.isScanning)
         #expect(scanner.startCount == 2)
     }
 
     /// 探している間に許可を取り消されたら、探すのをやめる
     @Test
-    func stopsWhenPermissionIsRevoked() {
+    func stopsWhenPermissionIsRevoked() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        scanner.send(.permissionChanged(.denied))
+        await detector.handling { scanner.send(.permissionChanged(.denied)) }
         #expect(!detector.isScanning)
         #expect(scanner.stopCount == 1)
     }
 
     /// `start()` していなければ、許可されても探さない（さがすタブを表示している間だけ探す）
     @Test
-    func doesNotScanUntilStarted() {
+    func doesNotScanUntilStarted() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
-        scanner.send(.permissionChanged(.authorized))
+        await detector.handling { scanner.send(.permissionChanged(.authorized)) }
         #expect(!detector.isScanning)
     }
 
     /// 同梱データのビーコンを見つけたら、対応するピースを出す
     @Test
-    func detectsPieceForKnownBeacon() {
+    func detectsPieceForKnownBeacon() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        scanner.send(.ranged([unknown, motomachi]))
+        await detector.handling { scanner.send(.ranged([unknown, motomachi])) }
         #expect(detector.detectedPiece?.name == "元町公園")
 
         detector.clearDetectedPiece()
@@ -195,26 +211,26 @@ struct BeaconDetectorTests {
 
     /// 同梱データに無いビーコン・空の結果では、ピースを出さない
     @Test
-    func ignoresUnknownBeacons() {
+    func ignoresUnknownBeacons() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        scanner.send(.ranged([unknown]))
-        scanner.send(.ranged([]))
+        await detector.handling { scanner.send(.ranged([unknown])) }
+        await detector.handling { scanner.send(.ranged([])) }
         #expect(detector.detectedPiece == nil)
     }
 
     /// `stop()` の後に届いた ranging の結果は使わない
     @Test
-    func ignoresRangingAfterStop() {
+    func ignoresRangingAfterStop() async {
         let scanner = StubBeaconScanner(permission: .authorized)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         detector.start()
         detector.stop()
         #expect(scanner.stopCount == 1)
 
-        scanner.send(.ranged([motomachi]))
+        await detector.handling { scanner.send(.ranged([motomachi])) }
         #expect(detector.detectedPiece == nil)
     }
 
@@ -228,28 +244,34 @@ struct BeaconDetectorTests {
 
     /// 擬似検知は、探し始めてから少し後に決めたビーコンを見つけたことにする
     @Test
-    func fakeScannerDetectsBeaconAfterDelay() async throws {
+    func fakeScannerDetectsBeaconAfterDelay() async {
         let scanner = FakeBeaconScanner(beacon: motomachi, delay: .milliseconds(10))
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
         #expect(detector.permission == .authorized)
 
-        detector.start()
-        for _ in 0..<100 where detector.detectedPiece == nil {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        await detector.handling { detector.start() }
         #expect(detector.detectedPiece?.name == "元町公園")
     }
 
     /// 擬似検知も、`stop()` したら見つけたことにしない
     @Test
-    func fakeScannerDoesNotDetectAfterStop() async throws {
-        let scanner = FakeBeaconScanner(beacon: motomachi, delay: .milliseconds(10))
-        let detector = BeaconDetector(catalog: catalog, scanner: scanner)
+    func fakeScannerDoesNotDetectAfterStop() async {
+        let events: AsyncStream<BeaconScanEvent>
+        do {
+            let scanner = FakeBeaconScanner(beacon: motomachi, delay: .milliseconds(10))
+            events = scanner.events
+            scanner.startRanging(uuids: [])
+            let task = scanner.task
+            scanner.stopRanging()
+            await task?.value
+        }
 
-        detector.start()
-        detector.stop()
-        try await Task.sleep(for: .milliseconds(100))
-        #expect(detector.detectedPiece == nil)
+        // 擬似検知が無くなると events が終わるので、それまでに流れた出来事を全部受け取れる
+        var received: [BeaconScanEvent] = []
+        for await event in events {
+            received.append(event)
+        }
+        #expect(received.isEmpty)
     }
 
     /// `-fakeBeaconID` があれば擬似検知、無い・同梱データに無い id なら CoreLocation で探す
@@ -263,13 +285,21 @@ struct BeaconDetectorTests {
 
     /// テストでは実際の位置情報を使わず、何も見つけない擬似検知にする
     @Test
-    func liveDetectorDoesNotUseLocationServicesWhileTesting() async throws {
+    func liveDetectorDoesNotUseLocationServicesWhileTesting() {
         let detector = BeaconDetector.live(options: LaunchOptions(usesLocationServices: false), catalog: catalog)
         #expect(detector.usesFakeScanner)
 
         detector.start()
-        try await Task.sleep(for: .milliseconds(50))
+        #expect(detector.isScanning)
         #expect(detector.detectedPiece == nil)
+    }
+
+    /// ビーコンを決めない擬似検知は、探し始めても何も見つけない
+    @Test
+    func fakeScannerWithoutBeaconFindsNothing() {
+        let scanner = FakeBeaconScanner(beacon: nil)
+        scanner.startRanging(uuids: [])
+        #expect(scanner.task == nil)
     }
 
     /// CoreLocation の許可の状態を、画面で使う許可の状態に直す
