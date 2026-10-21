@@ -12,6 +12,8 @@
 構成は [template-app-ios](https://github.com/shilokuma-inc/template-app-ios) にそろえています。
 
 - 署名情報・Bundle ID・バージョン・Deployment Target は [Configs/Project.xcconfig](Configs/Project.xcconfig) に集約しています（pbxproj には直接書かない）
+- Debug 構成は [Configs/Debug.xcconfig](Configs/Debug.xcconfig) で、Bundle ID `jp.shilokuma.Demomoni-debug`・下部に「debug」と書いたアイコン（`AppIcon-Debug`）・ホーム画面の名前「でももに！β」にしています。デバッグモード入りの版を、App Store 版（Release 構成の `jp.shilokuma.Demomoni`）と別のアプリとして配るためです
+- スキームは 2 つあります。`demomoni-remake-ios` は App Store 版（Archive は Release）、`demomoni-remake-ios-debug` はデバッグモード入りの版（Run・Archive とも Debug）です
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
 - ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
@@ -22,9 +24,10 @@
 
 | タブ | 画面 |
 | --- | --- |
-| なぞなぞ | なぞなぞの一覧 → 詳細（問題文・「ヒントをみる」） |
+| なぞなぞ | なぞなぞの一覧 → 詳細（問題文・「ヒントをみる」）。答えの場所のピースをゲットしたなぞなぞは、一覧に印が付き、詳細に答えが出ます |
 | さがす（初期） | 歩くうさぎと道・チュートリアル。表示している間だけ近くの iBeacon を探し、まだ獲得していないピースを見つけると「ピースをゲットしたよ！！」を出して保存します |
 | いちらん | 五稜郭の盤（4 × 8 = 32 マス）に獲得したピースを並べます → ピース詳細 → PencilKit でサインを描いて保存 |
+| せってい | アプリのバージョンと、ニコモジ+ のライセンス（SIL Open Font License 1.1）の本文。Debug ビルドだけ、ピースを埋める・外す・全部埋める・全部リセットし、ピースを選んで擬似検知（「ゲットした」画面まで）できるデバッグモードがあります |
 
 - 同梱データ（ビーコン・ピース・なぞなぞ）は `demomoni-remake-ios/Resources/Data/` の JSON です
 - 獲得状態・日時・サインは SwiftData で端末の中に保存します。位置情報は端末の中だけで使い、外へ送りません
@@ -68,6 +71,10 @@ Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml
 template-app-ios と同じ構成で、App Store Connect の API Key で認証します（Apple ID は使いません）。
 
 - Upload は Archive → IPA Export → App Store Connect へのアップロードまで行います。`develop` / `release/**` への push（PR のマージ）のたびに、TestFlight にビルドが上がります
+- Upload は 2 つのアプリを別の job で上げます。片方が失敗しても、もう片方は止まりません
+  - `upload`: App Store 版（スキーム `demomoni-remake-ios` を Release 構成で Archive した `jp.shilokuma.Demomoni`）
+  - `upload-debug`: デバッグモード入りの版（スキーム `demomoni-remake-ios-debug` を Debug 構成で Archive した `jp.shilokuma.Demomoni-debug`。アイコンの下部に「debug」、ホーム画面の名前は「でももに！β」）
+- デバッグモード入りの版を配るには、担当者が App Store Connect に `jp.shilokuma.Demomoni-debug` のアプリを作ります（名前の候補は「でももに！β」。App Store 全体で使用済みなら別の名前にします）。アプリが無いうちは `upload-debug` がアップロードの前に止まり、入力する値を Job Summary に出します。作った後は再実行します
 - ビルド番号は、アップロードのときに App Store Connect の最新ビルドを見て Xcode が自動で増やします。`CURRENT_PROJECT_VERSION` は手で上げません。バージョン（`MARKETING_VERSION`）はリリースのときに [Configs/Project.xcconfig](Configs/Project.xcconfig) で上げます
 - Archive / Upload は Actions タブから手動でも実行できます（Run workflow）。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
 - 実行中の Upload は、次の push が来ても取り消しません（途中で止めると App Store Connect に中途半端なビルドが残るため）
@@ -89,6 +96,7 @@ Secrets は BeaconFun4 の Organization に登録してあります（Settings �
 |---|---|
 | `TESTFLIGHT_INTERNAL_TESTERS` | TestFlight の内部テスターにするメールアドレス（カンマ区切り）。Upload が内部テストグループ「Internal Testers」を作って追加し、以降のビルドは処理が終わりしだい配信されます。空なら何もしません |
 | `ENABLE_DELIVERY` | `false` にすると Upload をスキップします。未設定なら実行します |
+| `ENABLE_DEBUG_DELIVERY` | `false` にすると、Upload のうちデバッグモード入りの版（`upload-debug`）だけをスキップします。未設定なら実行します |
 
 TestFlight の配信先を用意するには、担当者が変数 `TESTFLIGHT_INTERNAL_TESTERS` を、BeaconFun4 の Organization かこのリポジトリの Settings → Secrets and variables → Actions → **Variables** に登録します。
 テスターは App Store Connect のユーザーである必要があります。メールアドレスはリポジトリ・Issue・PR に書きません（このリポジトリは public です）。

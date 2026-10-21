@@ -17,6 +17,18 @@ on:
         description: Export した IPA を App Store Connect へアップロードするか
         type: boolean
         default: false
+      scheme:
+        description: Archive する共有スキーム。空ならプロジェクト名と同じスキーム（App Store 版）
+        type: string
+        default: ''
+      configuration:
+        description: Archive する構成（Release = App Store 版、Debug = デバッグモード入りの jp.shilokuma.Demomoni-debug）
+        type: string
+        default: Release
+      app-name:
+        description: App Store Connect にアプリが無いときに案内するアプリ名。空ならプロジェクト名
+        type: string
+        default: ''
     secrets:
       EXPORT_OPTIONS:
         description: ExportOptions.plist の内容（destination と、アップロード時の manageAppVersionAndBuildNumber はワークフロー側で上書きする）
@@ -49,29 +61,40 @@ jobs:
         run: defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
 
       - name: Set up environment
-        # プロジェクト名と同名の共有スキームが存在することを前提にする。
+        # スキームを指定しなければ、プロジェクト名と同名の共有スキームが存在することを前提にする。
         # ExportOptions.plist と API 秘密鍵はリポジトリ配下ではなく RUNNER_TEMP に置く
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          INPUT_SCHEME: ${{ inputs.scheme }}
+          INPUT_CONFIGURATION: ${{ inputs.configuration }}
+          INPUT_APP_NAME: ${{ inputs.app-name }}
         run: |
           project=$(basename -s .xcodeproj ./*.xcodeproj)
+          scheme=${INPUT_SCHEME:-$project}
           {
             echo "PROJECT_NAME=$project"
-            echo "SCHEME=$project"
+            echo "SCHEME=$scheme"
+            echo "CONFIGURATION=$INPUT_CONFIGURATION"
+            echo "APP_NAME=${INPUT_APP_NAME:-$project}"
             echo "EXPORT_OPTIONS_PATH=$RUNNER_TEMP/ExportOptions.plist"
             echo "API_KEY_PATH=$RUNNER_TEMP/private_keys/AuthKey_$APPLE_API_KEY_ID.p8"
           } >> "$GITHUB_ENV"
-          echo "project=$project scheme=$project"
+          echo "project=$project scheme=$scheme configuration=$INPUT_CONFIGURATION"
 
       - name: Archive
+        # -configuration はスキームの Archive の構成より優先されるので、入力の構成をそのまま渡す。
+        # Debug 構成は既定で dSYM を作らないため、TestFlight のクラッシュログを読めるよう dSYM を作らせる。
+        # Debug 構成はプレビュー用にアプリの本体を debug.dylib に分けるので、配る版では分けない
         run: |
           xcodebuild archive \
             -project "$PROJECT_NAME.xcodeproj" \
             -scheme "$SCHEME" \
             -sdk iphoneos \
-            -configuration Release \
+            -configuration "$CONFIGURATION" \
             -archivePath "$RUNNER_TEMP/build.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            DEBUG_INFORMATION_FORMAT=dwarf-with-dsym \
+            ENABLE_DEBUG_DYLIB=NO
 
       - name: Create ExportOptions.plist and API private key
         # Secrets はシェル展開ではなく env 経由で渡す
@@ -102,7 +125,8 @@ jobs:
       - name: Upload IPA to GitHub
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ env.PROJECT_NAME }}.ipa
+          # 同じ実行で Release と Debug の 2 つを上げるので、スキームの名前で分ける
+          name: ${{ env.SCHEME }}.ipa
           path: ${{ runner.temp }}/export/*.ipa
           if-no-files-found: error
 
@@ -116,7 +140,7 @@ jobs:
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' "$RUNNER_TEMP/build.xcarchive/Info.plist") \
-          APP_NAME="$PROJECT_NAME" \
+          APP_NAME="$APP_NAME" \
             ruby .github/scripts/check-app-store-app.rb
 
       - name: Set up TestFlight internal testers

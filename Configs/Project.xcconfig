@@ -13,6 +13,11 @@ DEVELOPMENT_TEAM = XU74X3434S
 // テストターゲットは $(APP_BUNDLE_IDENTIFIER).Tests / .UITests として派生させる
 APP_BUNDLE_IDENTIFIER = jp.shilokuma.Demomoni
 
+// アプリのアイコン（Assets.xcassets の appiconset の名前）。Debug 構成は Debug.xcconfig で差し替える
+APP_ICON_NAME = AppIcon
+// 選んだアイコンだけをアプリに入れる（Release に Debug 構成の AppIcon-Debug を入れない）
+ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO
+
 // バージョン（CFBundleShortVersionString / CFBundleVersion）
 MARKETING_VERSION = 1.0
 CURRENT_PROJECT_VERSION = 1

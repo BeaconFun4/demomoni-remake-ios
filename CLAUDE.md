@@ -26,6 +26,8 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   （Swift のモジュール名は `demomoni_remake_ios`。テストでは `@testable import demomoni_remake_ios`）
 - プロジェクトはフォルダ同期グループ（objectVersion 77）。ファイルの追加・削除・移動で `project.pbxproj` は変わらないので、pbxproj を手で直さない
 - 署名情報・Bundle ID・バージョン・Deployment Target は `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
+  - Debug 構成だけ `Configs/Debug.xcconfig` で、Bundle ID を `jp.shilokuma.Demomoni-debug`、アイコンを `AppIcon-Debug`（下部に「debug」。`scripts/make-debug-app-icon.swift` で作る）、ホーム画面の名前を「でももに！β」に差し替える（デバッグモード入りの版を App Store 版と別のアプリとして配るため）。アイコンは pbxproj の `ASSETCATALOG_COMPILER_APPICON_NAME = $(APP_ICON_NAME)` で xcconfig から選ぶ
+- 共有スキームは 2 つ。`demomoni-remake-ios`（Run・Test は Debug、Archive は Release = App Store 版。CI の `_build.yml` と `_archive.yml` の既定はプロジェクト名と同じこのスキームなので名前を変えない）と、`demomoni-remake-ios-debug`（Run・Archive とも Debug = デバッグモード入りの `jp.shilokuma.Demomoni-debug`。テストは持たない）。CI の Archive の構成はスキームではなく `_archive.yml` の `configuration` の入力（`-configuration`）で決まる
 - Swift 6 言語モード・Strict Concurrency（complete）。既定の分離は MainActor（UI テストのターゲットだけ nonisolated）
 - SwiftLint は Build Tool Plugin（SwiftLintPlugins）で全ターゲットに効く。ルールは `.swiftlint.yml`。
   手元の `xcodebuild` は `-skipPackagePluginValidation` を付けないと、プラグインの確認で止まることがある
@@ -39,17 +41,19 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect`・`.glass`・`.glassProminent`・`GlassEffectContainer`）は分岐なしで使う
 - 外観はライト固定（元アプリの色・画像が白地の前提）。タブの選択色は `ThemeColorPink`（`tint`）
 - エントリポイントは `DemomoniApp`。フォントの登録・`ModelContainer`・`BeaconDetector` を作り、Environment で画面に渡す
-- `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目のさがす）
-  - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）
+- `ContentView` の `TabView` に 4 つのタブを置く（初期選択は 2 番目のさがす）
+  - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）。答えの場所のピースを獲得したなぞなぞは、一覧に印を付け、詳細に答えを出す（`RiddleProgress`）
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
+  - `Settings/` … せってい（アプリのバージョン・ニコモジ+ のライセンスの本文）。App Store 版でも空にならない項目を置く（デバッグ用の項目は `#if DEBUG` の中に置く）。Debug 構成だけ `Settings/DebugMode/` のデバッグモード（ピースを 1 つずつ埋める・外す・全部埋める・全部リセット・ピースを選んで擬似検知）への入口がある。擬似検知は `BeaconDetector.injectDetection(pieceID:)` で入れてから、`EnvironmentValues.showSearchTab` でさがすタブに切り替える（さがすタブが探し始めたときに届き、保存して「ゲットした」画面を出す）
 - 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
 
 データと状態:
 
-- `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。2 件ずつ）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
-- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込みは `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
-- `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`
+- `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。ビーコンとピースは 32 件（函館 24・大沼 4・北斗 4。ビーコンは仮の値で minor = 5000 + id × 1000）、なぞなぞも 32 件）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、なぞなぞとピースは `Riddle.pieceId` = `Piece.id` で 1 対 1（答え = ピースの場所の名前。ヒントは答えの 1 文字を「◯」で伏せたもの）、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- ピースの画像（`Assets.xcassets/Pieces/`）は盤の 32 マスぶん（`piece1`〜`piece32`。400 × 400 の中央の 200 × 200 がマス）。`piece1`・`piece14` は元アプリのもの、残りの 30 枚は `scripts/make-piece-images.swift` で `goryokaku_long` を `PieceAllBorder` の形に切り出したもの（既にある画像は上書きしない）
+- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込み（獲得・まとめて獲得・サイン・1 ピースを外す・全部消す）は `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
+- `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`。デバッグモードからは `injectDetection(pieceID:)` で「そのピースのビーコンを見つけた」を外から入れる（探していなければ次の `start()` まで持っておく）
 - サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
 - 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない
 
@@ -77,6 +81,9 @@ Archive / Upload（`archive.yml` / `upload.yml` → `_archive.yml`。template-ap
 Secrets（`APPLE_API_KEY_BASE64`・`APPLE_API_KEY_ID`・`APPLE_API_ISSUER_ID`・`EXPORT_OPTIONS`）は BeaconFun4 の Organization に登録してある。
 
 - Upload は `develop` / `release/**` への push（ドキュメントだけの変更でも）。ループの最終 PR を `develop` にマージすると TestFlight にビルドが上がる
+  - App Store 版（`upload` の job。Release 構成の `jp.shilokuma.Demomoni`）と、デバッグモード入りの版（`upload-debug` の job。`demomoni-remake-ios-debug` のスキームを Debug 構成で Archive した `jp.shilokuma.Demomoni-debug`）を別の job で上げる。片方が失敗しても、もう片方は止まらない
+  - `_archive.yml` の入力は `scheme`（空ならプロジェクト名）・`configuration`（既定 Release）・`app-name`（アプリが無いときに案内する名前）。IPA の artifact はスキームの名前で分ける
+  - Debug 版を上げるには、人間が App Store Connect に `jp.shilokuma.Demomoni-debug` のアプリ（名前の候補は「でももに！β」）を作る（アプリの作成は API でできない。無いうちは `upload-debug` がアップロードの前に止まり、Job Summary に手順を出す）。内部テスターは `TESTFLIGHT_INTERNAL_TESTERS` で同じように入る。リポジトリ変数 `ENABLE_DEBUG_DELIVERY=false` で `upload-debug` だけスキップできる
 - Archive（IPA Export まで。アップロードしない）は `main` への push。どちらも手動実行（workflow_dispatch）できる
 - ビルド番号は Xcode が App Store Connect の最新ビルドを見て採番するので、`CURRENT_PROJECT_VERSION` は上げない
 - 輸出コンプライアンスは `Configs/Project.xcconfig` の `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` で申告している（TestFlight で暗号化の質問を出さないため）。独自の暗号や標準外のアルゴリズムを入れるときは見直す
