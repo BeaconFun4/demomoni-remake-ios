@@ -158,7 +158,7 @@ extension NearbyPieceAlerts {
             preference: NearbyPieceAlertPreference(defaults: .standard),
             catalog: catalog,
             container: container,
-            monitor: CoreLocationBeaconRegionMonitor(),
+            monitor: CoreLocationBeaconRegionMonitor.shared,
             notifier: UserNotificationPieceNotifier(),
             isAppActive: { UIApplication.shared.applicationState == .active }
         )

@@ -25,25 +25,39 @@ protocol BeaconRegionMonitor: AnyObject {
     func removeAllConditions() async
 }
 
-/// `CLMonitor` の `BeaconIdentityCondition` でビーコンの範囲を見張る
+/// `CLMonitor` の `BeaconIdentityCondition` でビーコンの範囲を見張る。
+/// 同じ名前の `CLMonitor` を 2 つ開かないよう、プロセスで 1 つの共有インスタンス（`shared`）だけを使い、開く処理は `OpenOnce` で 1 回にまとめる（#120）
 final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
+    /// プロセスで 1 つだけの見張り。`NearbyPieceAlerts.live` を何度呼んでも、これを使う
+    static let shared = CoreLocationBeaconRegionMonitor()
+
     let events: AsyncStream<BeaconRegionEvent>
 
-    nonisolated private let continuation: AsyncStream<BeaconRegionEvent>.Continuation
     /// 許可の状態を読み、「常に許可」を尋ねるために持つ
     private let manager = CLLocationManager()
-    /// 最初に条件を扱うときに開く（オンにしたことの無い人には作らない）
-    private var monitor: CLMonitor?
-    /// `monitor.events` を受け続ける処理
-    private var eventTask: Task<Void, Never>?
+    /// 最初に条件を扱うときに `CLMonitor` を開く（オンにしたことの無い人には作らない）。
+    /// 開いたときに `monitor.events` を受け始めるので、受けるのもプロセスで 1 か所だけになる
+    private let opener: OpenOnce<CLMonitor>
 
-    init() {
-        (events, continuation) = AsyncStream.makeStream(of: BeaconRegionEvent.self)
-    }
-
-    isolated deinit {
-        eventTask?.cancel()
-        continuation.finish()
+    private init() {
+        let (events, continuation) = AsyncStream.makeStream(of: BeaconRegionEvent.self)
+        self.events = events
+        opener = OpenOnce {
+            // 同じ名前の CLMonitor を開くと、前に足した条件と、起動の理由になった出来事も届く
+            let monitor = await CLMonitor(NearbyPieceMonitoring.monitorName)
+            let monitorEvents = await monitor.events
+            // 共有インスタンスはプロセスが終わるまで残るので、受け続ける処理も止めない
+            Task {
+                do {
+                    for try await event in monitorEvents {
+                        continuation.yield(BeaconRegionEvent(event))
+                    }
+                } catch {
+                    // 出来事が届かなくなっても、通知が出ないだけなので何もしない
+                }
+            }
+            return monitor
+        }
     }
 
     var isAlwaysAuthorized: Bool {
@@ -71,7 +85,7 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
     }
 
     func setConditions(_ conditions: [MonitoredBeacon]) async {
-        let monitor = await openMonitor()
+        let monitor = await opener.value()
         let wanted = Set(conditions.map(\.identifier))
         for identifier in await monitor.identifiers where !wanted.contains(identifier) {
             await monitor.remove(identifier)
@@ -83,35 +97,10 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
     }
 
     func removeAllConditions() async {
-        let monitor = await openMonitor()
+        let monitor = await opener.value()
         for identifier in await monitor.identifiers {
             await monitor.remove(identifier)
         }
-    }
-
-    /// 同じ名前の `CLMonitor` を開き、出来事を受け始める（前に足した条件と、起動の理由になった出来事も届く）
-    private func openMonitor() async -> CLMonitor {
-        if let monitor {
-            return monitor
-        }
-        let opened = await CLMonitor(NearbyPieceMonitoring.monitorName)
-        // 開くのを待っている間に、別の呼び出しが先に開いていたらそちらを使う
-        if let monitor {
-            return monitor
-        }
-        monitor = opened
-        let openedEvents = await opened.events
-        let continuation = continuation
-        eventTask = Task {
-            do {
-                for try await event in openedEvents {
-                    continuation.yield(BeaconRegionEvent(event))
-                }
-            } catch {
-                // 出来事が届かなくなっても、通知が出ないだけなので何もしない
-            }
-        }
-        return opened
     }
 }
 
