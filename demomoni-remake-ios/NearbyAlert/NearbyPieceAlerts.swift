@@ -76,7 +76,10 @@ final class NearbyPieceAlerts {
     func preferenceDidChange() async {
         if preference.isEnabled {
             await notifier.requestAuthorization()
-            monitor.requestAlwaysAuthorizationIfNeeded()
+            // 通知の許可を尋ねている間にオフに戻されたら、位置情報は尋ねない
+            if preference.isEnabled {
+                monitor.requestAlwaysAuthorizationIfNeeded()
+            }
         }
         await refresh()
     }
