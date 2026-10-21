@@ -13,6 +13,7 @@
 
 - 署名情報・Bundle ID・バージョン・Deployment Target は [Configs/Project.xcconfig](Configs/Project.xcconfig) に集約しています（pbxproj には直接書かない）
 - Debug 構成は [Configs/Debug.xcconfig](Configs/Debug.xcconfig) で、Bundle ID `jp.shilokuma.Demomoni-debug`・下部に「debug」と書いたアイコン（`AppIcon-Debug`）・ホーム画面の名前「でももに！β」にしています。デバッグモード入りの版を、App Store 版（Release 構成の `jp.shilokuma.Demomoni`）と別のアプリとして配るためです
+- スキームは 2 つあります。`demomoni-remake-ios` は App Store 版（Archive は Release）、`demomoni-remake-ios-debug` はデバッグモード入りの版（Run・Archive とも Debug）です
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
 - ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
