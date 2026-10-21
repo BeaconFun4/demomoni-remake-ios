@@ -194,6 +194,23 @@ struct NearbyPieceAlertsTests {
         #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: collected[0])) } == false)
     }
 
+    /// CLMonitor を開けなかったら（位置情報の許可が無い・未決定）、見張っていることにしない
+    @Test
+    func doesNotMonitorWhenMonitorCannotOpen() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        monitor.canOpenMonitor = false
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
+
+        await alerts.refresh()
+        #expect(!alerts.isMonitoring)
+        #expect(monitor.conditions == nil)
+
+        monitor.canOpenMonitor = true
+        await alerts.refresh()
+        #expect(alerts.isMonitoring)
+        #expect(monitor.conditions?.isEmpty == false)
+    }
+
     /// オンでも、位置情報が「常に」でない・通知が許可されていなければ見張らない（条件を外し、session を持たない）
     @Test(arguments: [(false, true), (true, false)])
     func doesNotMonitorWithoutPermission(isAlwaysAuthorized: Bool, areNotificationsAllowed: Bool) async throws {
