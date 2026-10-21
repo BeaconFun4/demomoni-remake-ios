@@ -27,6 +27,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - プロジェクトはフォルダ同期グループ（objectVersion 77）。ファイルの追加・削除・移動で `project.pbxproj` は変わらないので、pbxproj を手で直さない
 - 署名情報・Bundle ID・バージョン・Deployment Target は `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
   - Debug 構成だけ `Configs/Debug.xcconfig` で、Bundle ID を `jp.shilokuma.Demomoni-debug`、アイコンを `AppIcon-Debug`（下部に「debug」。`scripts/make-debug-app-icon.swift` で作る）、ホーム画面の名前を「でももに！β」に差し替える（デバッグモード入りの版を App Store 版と別のアプリとして配るため）。アイコンは pbxproj の `ASSETCATALOG_COMPILER_APPICON_NAME = $(APP_ICON_NAME)` で xcconfig から選ぶ
+- 共有スキームは 2 つ。`demomoni-remake-ios`（Run・Test は Debug、Archive は Release = App Store 版。CI の `_build.yml`・`_archive.yml` はプロジェクト名と同じこのスキームを使うので名前を変えない）と、`demomoni-remake-ios-debug`（Run・Archive とも Debug = デバッグモード入りの `jp.shilokuma.Demomoni-debug`。テストは持たない）
 - Swift 6 言語モード・Strict Concurrency（complete）。既定の分離は MainActor（UI テストのターゲットだけ nonisolated）
 - SwiftLint は Build Tool Plugin（SwiftLintPlugins）で全ターゲットに効く。ルールは `.swiftlint.yml`。
   手元の `xcodebuild` は `-skipPackagePluginValidation` を付けないと、プラグインの確認で止まることがある
