@@ -5,7 +5,8 @@
 
 import SwiftUI
 
-/// せっていタブ。アプリのバージョンと、同梱しているフォントのライセンスを出す
+/// せっていタブ。アプリのバージョンと、同梱しているフォントのライセンスを出す。
+/// Debug 構成だけ、デバッグモードへの入口を置く（App Store 版の Release 構成には入れない）
 struct SettingsView: View {
     var body: some View {
         NavigationStack {
@@ -18,6 +19,13 @@ struct SettingsView: View {
                         FontLicenseView()
                     }
                 }
+                #if DEBUG
+                Section("デバッグ（Debug ビルドだけ）") {
+                    NavigationLink("デバッグモード") {
+                        DebugModeView()
+                    }
+                }
+                #endif
             }
             .font(.demomoni(size: 18, relativeTo: .body))
             .scrollContentBackground(.hidden)
