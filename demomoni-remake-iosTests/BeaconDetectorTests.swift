@@ -8,12 +8,22 @@ import CoreLocation
 import Foundation
 import Testing
 
+/// 終えたかを記録する `LocationSession`
+private final class StubLocationSession: LocationSession {
+    private(set) var isInvalidated = false
+
+    func invalidate() {
+        isInvalidated = true
+    }
+}
+
 /// テストから許可の変化と ranging の結果を送れる `BeaconScanner`
 private final class StubBeaconScanner: BeaconScanner {
     let events: AsyncStream<BeaconScanEvent>
     var permission: LocationPermission
     private let continuation: AsyncStream<BeaconScanEvent>.Continuation
-    private(set) var permissionRequests = 0
+    /// 作った session（終えたものも含む）
+    private(set) var sessions: [StubLocationSession] = []
     private(set) var rangingUUIDs: Set<UUID>?
     private(set) var startCount = 0
     private(set) var stopCount = 0
@@ -23,8 +33,15 @@ private final class StubBeaconScanner: BeaconScanner {
         self.permission = permission
     }
 
-    func requestPermission() {
-        permissionRequests += 1
+    /// 終えていない session の数
+    var activeSessionCount: Int {
+        sessions.count { !$0.isInvalidated }
+    }
+
+    func makeSession() -> any LocationSession {
+        let session = StubLocationSession()
+        sessions.append(session)
+        return session
     }
 
     func startRanging(uuids: Set<UUID>) {
@@ -80,20 +97,23 @@ struct BeaconDetectorTests {
         DetectedBeacon(uuid: uuid, major: 0, minor: 4000)
     }
 
-    /// 許可をまだ尋ねていなければ、探し始めるときに尋ね、許可されたら ranging を始める
+    /// 許可をまだ尋ねていなければ、探し始めるときに session を始めて尋ね、許可されたら ranging を始める
     @Test
     func requestsPermissionThenStartsRanging() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
+        #expect(scanner.sessions.isEmpty)
 
         detector.start()
-        #expect(scanner.permissionRequests == 1)
+        #expect(scanner.activeSessionCount == 1)
         #expect(!detector.isScanning)
 
         await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(detector.permission == .authorized)
         #expect(detector.isScanning)
         #expect(scanner.rangingUUIDs == [uuid])
+        #expect(scanner.sessions.count == 1)
+        #expect(scanner.activeSessionCount == 1)
     }
 
     /// 許可されていれば、すぐに同梱データの UUID で ranging を始める
@@ -103,9 +123,9 @@ struct BeaconDetectorTests {
         let detector = BeaconDetector(catalog: catalog, scanner: scanner)
 
         detector.start()
-        #expect(scanner.permissionRequests == 0)
         #expect(detector.isScanning)
         #expect(scanner.rangingUUIDs == [uuid])
+        #expect(scanner.activeSessionCount == 1)
     }
 
     /// 許可が無い・拒否されたときは探さず、許可の状態を画面に渡す
@@ -118,10 +138,10 @@ struct BeaconDetectorTests {
         #expect(detector.permission == permission)
         #expect(!detector.isScanning)
         #expect(scanner.rangingUUIDs == nil)
-        #expect(scanner.permissionRequests == 0)
+        #expect(scanner.sessions.isEmpty)
     }
 
-    /// 何度 `start()` しても、許可が何度届いても、ranging は 1 回だけ始める
+    /// 何度 `start()` しても、許可が何度届いても、ranging と session は 1 回だけ始める
     @Test
     func startsRangingOnlyOnce() async {
         let scanner = StubBeaconScanner(permission: .notDetermined)
@@ -133,6 +153,7 @@ struct BeaconDetectorTests {
         await scanner.send(.permissionChanged(.authorized), to: detector)
         detector.start()
         #expect(scanner.startCount == 1)
+        #expect(scanner.sessions.count == 1)
     }
 
     /// 許可を待っている間に `stop()` したら、その後に許可されても探さない
@@ -146,6 +167,23 @@ struct BeaconDetectorTests {
         await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(!detector.isScanning)
         #expect(scanner.startCount == 0)
+        #expect(scanner.sessions.count == 1)
+        #expect(scanner.activeSessionCount == 0)
+    }
+
+    /// `stop()` したら session を終える
+    @Test
+    func invalidatesSessionOnStop() {
+        let scanner = StubBeaconScanner(permission: .authorized)
+        let detector = BeaconDetector(catalog: catalog, scanner: scanner)
+
+        detector.start()
+        detector.stop()
+        #expect(scanner.sessions.count == 1)
+        #expect(scanner.activeSessionCount == 0)
+
+        detector.stop()
+        #expect(scanner.sessions.count == 1)
     }
 
     /// `stop()` の後にもう一度 `start()` すると、また見つけられる（タブを行き来したとき）
@@ -158,6 +196,8 @@ struct BeaconDetectorTests {
         detector.stop()
         detector.start()
         #expect(scanner.startCount == 2)
+        #expect(scanner.sessions.count == 2)
+        #expect(scanner.activeSessionCount == 1)
 
         await scanner.send(.ranged([motomachi]), to: detector)
         #expect(detector.detectedPiece?.name == "元町公園")
@@ -173,13 +213,15 @@ struct BeaconDetectorTests {
         await scanner.send(.permissionChanged(.reducedAccuracy), to: detector)
         #expect(detector.permission == .reducedAccuracy)
         #expect(!detector.isScanning)
+        #expect(scanner.activeSessionCount == 0)
 
         await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(detector.isScanning)
         #expect(scanner.startCount == 2)
+        #expect(scanner.activeSessionCount == 1)
     }
 
-    /// 探している間に許可を取り消されたら、探すのをやめる
+    /// 探している間に許可を取り消されたら、探すのをやめて session を終える
     @Test
     func stopsWhenPermissionIsRevoked() async {
         let scanner = StubBeaconScanner(permission: .authorized)
@@ -189,6 +231,7 @@ struct BeaconDetectorTests {
         await scanner.send(.permissionChanged(.denied), to: detector)
         #expect(!detector.isScanning)
         #expect(scanner.stopCount == 1)
+        #expect(scanner.activeSessionCount == 0)
     }
 
     /// `start()` していなければ、許可されても探さない（さがすタブを表示している間だけ探す）
@@ -199,6 +242,7 @@ struct BeaconDetectorTests {
 
         await scanner.send(.permissionChanged(.authorized), to: detector)
         #expect(!detector.isScanning)
+        #expect(scanner.sessions.isEmpty)
     }
 
     /// 同梱データのビーコンを見つけたら、対応するピースを出す
