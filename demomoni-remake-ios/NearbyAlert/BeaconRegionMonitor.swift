@@ -11,8 +11,12 @@ import Foundation
 protocol BeaconRegionMonitor: AnyObject {
     /// 範囲に入った・出た出来事。受け取るのは 1 か所だけ（`NearbyPieceAlerts`）
     var events: AsyncStream<BeaconRegionEvent> { get }
-    /// 位置情報が「常に」で、正確な位置情報もオンか（アプリを閉じている間も出来事が届く）
-    var isAlwaysAuthorizedWithFullAccuracy: Bool { get }
+    /// 位置情報が「常に」か（アプリを閉じている間も出来事が届く）
+    var isAlwaysAuthorized: Bool { get }
+    /// 正確な位置情報がオンか（オフだと iBeacon を見張れない）
+    var hasFullAccuracy: Bool { get }
+    /// 位置情報の「常に許可」を尋ねる。まだ尋ねていない・使用中だけのときだけ尋ね、拒否されている・「常に」なら何もしない
+    func requestAlwaysAuthorizationIfNeeded()
     /// 位置情報（常に）の session を始める。持っている間だけ、アプリを閉じていても出来事が届く
     func makeAlwaysSession() -> any LocationSession
     /// 見張る条件をこの一覧にそろえる（無いものは足し、一覧に無いものは外す）
@@ -26,7 +30,7 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
     let events: AsyncStream<BeaconRegionEvent>
 
     nonisolated private let continuation: AsyncStream<BeaconRegionEvent>.Continuation
-    /// 許可の状態を読むためだけに持つ
+    /// 許可の状態を読み、「常に許可」を尋ねるために持つ
     private let manager = CLLocationManager()
     /// 最初に条件を扱うときに開く（オンにしたことの無い人には作らない）
     private var monitor: CLMonitor?
@@ -42,8 +46,24 @@ final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
         continuation.finish()
     }
 
-    var isAlwaysAuthorizedWithFullAccuracy: Bool {
-        manager.authorizationStatus == .authorizedAlways && manager.accuracyAuthorization == .fullAccuracy
+    var isAlwaysAuthorized: Bool {
+        manager.authorizationStatus == .authorizedAlways
+    }
+
+    var hasFullAccuracy: Bool {
+        manager.accuracyAuthorization == .fullAccuracy
+    }
+
+    func requestAlwaysAuthorizationIfNeeded() {
+        switch manager.authorizationStatus {
+        case .notDetermined, .authorizedWhenInUse:
+            // 使用中から「常に」に上げるダイアログは、iOS が 1 回だけ出す。断られたら設定アプリへ案内する
+            manager.requestAlwaysAuthorization()
+        case .authorizedAlways, .denied, .restricted:
+            break
+        @unknown default:
+            break
+        }
     }
 
     func makeAlwaysSession() -> any LocationSession {
@@ -125,7 +145,10 @@ extension BeaconRegionEvent {
 /// 何もしない見張り。UI テストと Unit テストのホストで、`CLMonitor`・`CLServiceSession` を作らないために使う
 final class InactiveBeaconRegionMonitor: BeaconRegionMonitor {
     let events = AsyncStream<BeaconRegionEvent> { $0.finish() }
-    let isAlwaysAuthorizedWithFullAccuracy = false
+    let isAlwaysAuthorized = false
+    let hasFullAccuracy = false
+
+    func requestAlwaysAuthorizationIfNeeded() {}
 
     func makeAlwaysSession() -> any LocationSession {
         FakeLocationSession()
