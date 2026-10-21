@@ -8,7 +8,10 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var selection = 2
+    /// さがすタブの tag
+    static let searchTab = 2
+
+    @State var selection = searchTab
 
     var body: some View {
         TabView(selection: $selection) {
@@ -16,7 +19,7 @@ struct ContentView: View {
                 .tag(1)
 
             SearchView()
-                .tag(2)
+                .tag(Self.searchTab)
 
             PieceListView()
                 .tag(3)
@@ -26,8 +29,28 @@ struct ContentView: View {
         }
         // タブの選択色は元アプリのピンク
         .tint(.themeColorPink)
+        #if DEBUG
+        // デバッグモードの擬似検知で、さがすタブに切り替える
+        .environment(\.showSearchTab, ShowSearchTabAction { selection = Self.searchTab })
+        #endif
     }
 }
+
+#if DEBUG
+/// さがすタブに切り替える（Debug 構成だけ。デバッグモードの擬似検知で使う）
+struct ShowSearchTabAction {
+    let action: () -> Void
+
+    func callAsFunction() {
+        action()
+    }
+}
+
+extension EnvironmentValues {
+    /// さがすタブに切り替える。`ContentView` の外（プレビューなど）では何もしない
+    @Entry var showSearchTab = ShowSearchTabAction {}
+}
+#endif
 
 #Preview {
     ContentView()
