@@ -21,7 +21,7 @@ final class BeaconDetector {
     @ObservationIgnored private let scanner: any BeaconScanner
     /// `start()` されているか（許可を待っている間も `true`）
     @ObservationIgnored private var wantsScanning = false
-    /// 探している間（許可を待っている間も）持つ位置情報の session
+    /// 位置情報の session。探していて、許可がまだ・許可済みの間だけ持つ（`updateSession()`）
     @ObservationIgnored private var session: (any LocationSession)?
     /// 外から入れた擬似検知のうち、まだ `detectedPiece` に入れていないもの（`injectDetection(pieceID:)`）
     @ObservationIgnored private var injectedPiece: Piece?
