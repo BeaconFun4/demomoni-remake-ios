@@ -18,10 +18,6 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination "$DEST" \
   -derivedDataPath "$DD" -parallel-testing-enabled NO -skipPackagePluginValidation -skipMacroValidation
 
-# macOS（ネイティブ）のビルド。CI では確かめていないので、手元で確かめる
-xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-ios -destination 'platform=macOS' \
-  -derivedDataPath "$DD" CODE_SIGNING_ALLOWED=NO -skipPackagePluginValidation -skipMacroValidation
-
 # SwiftLint（CI と同じく --strict。ビルドか -resolvePackageDependencies の後に、SPM が解決したバイナリを使う）
 "$(find "$DD/SourcePackages/artifacts" -type f -name swiftlint -path '*macos*' | head -1)" lint --strict
 ```
@@ -38,20 +34,40 @@ xcodebuild build -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-
 
 ## アーキテクチャ
 
-「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。現状は画面の雛形だけ。
+「でももに！」の iOS アプリの SwiftUI による再開発版（README を参照）。元アプリ（BeaconFun4/demomoni-ios。UIKit + Storyboard。private）の画面・文言・色・画像を、標準のコンポーネントと Liquid Glass で作り直している。
 
-- SwiftUI。iOS 17.4+（iPhone / iPad）と macOS 14.3+（ネイティブ。Xcode 15 の Multiplatform テンプレートで作られたため）
-- エントリポイントは `DemomoniApp`
-- `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目）
-  - `Riddle/RiddleView` … なぞなぞ
-  - `Search/SearchView` … さがす
-  - `PieceList/PieceListView` … いちらん
-- 画面は機能ごとのディレクトリ（`Riddle/` など）に分ける
+- SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect`・`.glass`・`.glassProminent`・`GlassEffectContainer`）は分岐なしで使う
+- 外観はライト固定（元アプリの色・画像が白地の前提）。タブの選択色は `ThemeColorPink`（`tint`）
+- エントリポイントは `DemomoniApp`。フォントの登録・`ModelContainer`・`BeaconDetector` を作り、Environment で画面に渡す
+- `ContentView` の `TabView` に 3 つのタブを置く（初期選択は 2 番目のさがす）
+  - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）
+  - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
+  - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
+- 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
+
+データと状態:
+
+- `Catalog/` … 同梱データ（`Resources/Data/` の `beacons.json`・`pieces.json`・`riddles.json`。2 件ずつ）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。ビーコンとピースは `beaconId` = `Piece.id`、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込みは `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
+- `Detection/` … iBeacon の検知。`BeaconDetector`（`@Observable`）が `BeaconScanner` を包む。実機は `CoreLocationBeaconScanner`（`CLBeaconIdentityConstraint` の ranging。使用中の許可・正確な位置情報が要る）、テストは `FakeBeaconScanner`
+- サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
+- 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない
+
+起動引数（`LaunchOptions` の 1 か所で読む。UI テストと PR のスクリーンショットの撮影で使う）:
+
+| 引数 | 動き |
+| --- | --- |
+| `-uiTesting` | メモリ上の空のストアで起動し、実際の位置情報を使わない（許可のダイアログを出さない） |
+| `-fakeBeaconID <id>` | 探し始めて 2 秒後に、その beaconId のビーコンを 1 回見つけたことにする（擬似検知） |
+| `-collectedPieceIDs <id>,<id>` | `-uiTesting` のときだけ、そのピースを獲得済みにして起動する |
+
+- Unit テストのホストとして起動したとき（環境変数 `XCTestConfigurationFilePath` がある）も、実際の位置情報は使わない
+- UI テストでタブを押すときは `XCUIApplication.tabButton(_:)` を使う（iPad ではタブが `tabBars` に入らない）
 
 ## CI
 
 GitHub Actions の Build（`.github/workflows/build.yml` → `_build.yml`。template-app-ios と同じ）が、SwiftLint（`--strict`）・ビルド・テストを実行する。
-Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simulator だけで確かめる（macOS のビルドは CI に無いので、ループの検証で確かめる）。
+Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simulator だけで確かめる。
 
 - 作業ブランチへの push は Unit テストだけ。PR の作成時と `develop` / `main` / `release/**` への push は UI テストも実行する
 - ループの子 PR（`epic/**` 宛て）では PR のイベントで実行しない（push の Unit テストで確かめる）。最終 PR（`epic/**` → `develop`）は更新のたびに UI テストまで実行する
@@ -100,5 +116,5 @@ Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simul
 ```
 <!-- ralph-kit:snippet end -->
 
-ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は、上の Commands の SwiftLint・test（Unit + UI）・macOS の build。
+ループの検証コマンド（playbook の `{{VERIFY_COMMANDS}}`）は、上の Commands の SwiftLint・test（Unit + UI）。
 Simulator は `xcrun simctl list devices available` で UDID を調べて `id=` で指定し、`-derivedDataPath` はスロットごとにリポジトリの外へ分ける。
