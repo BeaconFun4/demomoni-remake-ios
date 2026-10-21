@@ -2,10 +2,11 @@
 //
 //  make-app-icon-layers.swift
 //
-//  今のアプリのアイコン（AppIcon.appiconset の 1 枚の平面のイラスト）を、Liquid Glass のアイコン（Icon Composer の .icon）の
-//  層の素材に切り分け、透過 PNG（1024 × 1024。元の絵と同じ位置・同じ大きさのキャンバス）に書き出す。
+//  アプリのアイコンの元の絵（docs/app-icon/demomoni-AppIcon.png。1 枚の平面のイラスト）を、Liquid Glass のアイコン
+//  （Icon Composer の AppIcon.icon）の層の素材に切り分け、透過 PNG（1024 × 1024。元の絵と同じ位置・同じ大きさのキャンバス）で
+//  demomoni-remake-ios/AppIcon.icon/Assets/ に書き出す。icon.json（重なり順・ガラスの効果）は書き換えない（手で書くか Icon Composer で直す）。
 //
-//  - 背景（水色）は画像にせず、.icon の icon.json の塗り（fill）で表す。塗りの色は実行したときに表示する
+//  - 背景（水色）は画像にせず、icon.json の塗り（fill）で表す。塗りの色は実行したときに表示する
 //  - piece.png … パズルのピース（赤い面と線）。キャラクターに隠れている部分は、見えている 4 辺を延ばした
 //    ひし形（pieceCorners）と見えているピースを囲む凸包で推測し、ピースの赤で塗る
 //    （キャラクターの下だけに描き足すので、重ねたときの見た目は変わらない）
@@ -15,10 +16,11 @@
 //  1. 画像の縁から、背景の色に近い画素を塗りつぶして背景を決める。残りが前景（ピースとキャラクター）
 //  2. 画像の縁から、明るい画素（白・灰色・黄色）以外を塗りつぶす。届かなかった画素がキャラクターの面（線に囲まれた内側）
 //  3. キャラクターの面から outlineReach 画素以内の、背景・ピースの赤でない前景の画素（キャラクターの線）をキャラクターに足す
-//  4. 前景のうちキャラクターでない画素がピース。ひし形と見えているピースの凸包の内側で、キャラクターに隠れた画素を赤で塗る
-//     （凸包にするのは、左下の出っ張りの付け根のように、ひし形の外でキャラクターに隠れた部分も塗るため）
+//  4. 前景のうちキャラクターでない画素がピース。ひし形と見えているピース（いちばん大きなかたまり）の凸包の内側で、
+//     キャラクターに隠れた画素を赤で塗る（凸包にするのは、左下の出っ張りの付け根のように、ひし形の外でキャラクターに隠れた部分も塗るため）
 //
-//  最後に、塗りの色の上に piece.png・character.png を重ね直し、元の絵との差を表示する（背景の汚れのほかに大きく違う画素があれば止まる）。
+//  書き出す前に、塗りの色の上に piece.png・character.png を重ね直し、元の絵との差を表示する
+//  （背景の汚れのほかに大きく違う画素があれば、書き出さずに止まる）。
 //  `--composite <パス>` を付けると、重ね直した画像をそのパスに書き出す（確かめ用。コミットしない）。
 //
 //  使い方（リポジトリの直下で）: swift scripts/make-app-icon-layers.swift [--composite /tmp/composite.png]
@@ -36,8 +38,8 @@ if let index = arguments.firstIndex(of: "--composite") {
     compositePath = arguments[index + 1]
 }
 
-let sourcePath = "demomoni-remake-ios/Assets.xcassets/AppIcon.appiconset/demomoni-AppIcon.png"
-let outputDirectory = "docs/app-icon/layers"
+let sourcePath = "docs/app-icon/demomoni-AppIcon.png"
+let outputDirectory = "demomoni-remake-ios/AppIcon.icon/Assets"
 let size = 1024
 
 /// 画素の色（0〜255）
@@ -283,9 +285,11 @@ while head < queue.count {
     }
 }
 
-// 4. 層の画像。描き足す範囲は、ひし形の 4 隅と見えているピースの画素の角を囲む凸包
+// 4. 層の画像。描き足す範囲は、ひし形の 4 隅と、見えているピースのいちばん大きなかたまりの画素の角を囲む凸包
+// （ピースから離れた前景のかたまりがあっても、凸包を広げないため）
+let isVisiblePiece = (0..<count).map { isForeground[$0] && !isCharacter[$0] }
 var hullPoints = pieceCorners
-for index in 0..<count where isForeground[index] && !isCharacter[index] {
+for index in components(of: isVisiblePiece).max(by: { $0.count < $1.count }) ?? [] {
     let x = CGFloat(index % size)
     let y = CGFloat(index / size)
     hullPoints += [CGPoint(x: x, y: y), CGPoint(x: x + 1, y: y), CGPoint(x: x, y: y + 1), CGPoint(x: x + 1, y: y + 1)]
@@ -307,11 +311,6 @@ for index in 0..<count where isForeground[index] {
         piece.set(index, color)
     }
 }
-try FileManager.default.createDirectory(atPath: outputDirectory, withIntermediateDirectories: true)
-piece.writePNG(to: "\(outputDirectory)/piece.png")
-character.writePNG(to: "\(outputDirectory)/character.png")
-print("wrote: \(outputDirectory)/piece.png（ピース。キャラクターの下に描き足した画素: \(filledPixels)）")
-print("wrote: \(outputDirectory)/character.png（キャラクター）")
 print(String(
     format: "背景の塗り: #%02X%02X%02X（icon.json の fill は srgb:%.5f,%.5f,%.5f,1.00000）",
     backgroundColor.red,
@@ -353,6 +352,13 @@ if let compositePath {
 }
 // 大きく違ってよいのは、背景の汚れとして消した画素だけ
 if unexpected > 0 {
-    fputs("重ね直した絵が元の絵と大きく違う\n", stderr)
+    fputs("重ね直した絵が元の絵と大きく違うので、層を書き出さない\n", stderr)
     exit(1)
 }
+
+// 6. 層を書き出す
+try FileManager.default.createDirectory(atPath: outputDirectory, withIntermediateDirectories: true)
+piece.writePNG(to: "\(outputDirectory)/piece.png")
+character.writePNG(to: "\(outputDirectory)/character.png")
+print("wrote: \(outputDirectory)/piece.png（ピース。キャラクターの下に描き足した画素: \(filledPixels)）")
+print("wrote: \(outputDirectory)/character.png（キャラクター）")
