@@ -62,6 +62,8 @@ private final class StubPieceNotifier: PieceNotifier {
     private(set) var posted: [PieceNotificationContent] = []
     /// 通知の許可を確かめたときに呼ぶ（確かめる前に何が済んでいるかを見るため）
     var onCheckAuthorization: (() -> Void)?
+    /// 通知の許可を尋ねたときに呼ぶ（尋ねている間に利用者がしたことを入れるため）
+    var onRequestAuthorization: (() -> Void)?
     private(set) var authorizationRequests = 0
 
     init(isAllowed: Bool) {
@@ -75,6 +77,7 @@ private final class StubPieceNotifier: PieceNotifier {
 
     func requestAuthorization() async {
         authorizationRequests += 1
+        onRequestAuthorization?()
     }
 
     func post(_ notification: PieceNotificationContent) async {
@@ -221,6 +224,21 @@ struct NearbyPieceAlertsTests {
         await alerts.preferenceDidChange()
         #expect(notifier.authorizationRequests == 1)
         #expect(monitor.alwaysAuthorizationRequests == 1)
+        #expect(alerts.permissionStatus == nil)
+    }
+
+    /// 通知の許可を尋ねている間にオフに戻されたら、位置情報の「常に許可」は尋ねない
+    @Test
+    func doesNotRequestLocationWhenTurnedOffWhileRequestingNotifications() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let notifier = StubPieceNotifier(isAllowed: false)
+        let alerts = makeAlerts(isEnabled: false, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
+        notifier.onRequestAuthorization = { alerts.preference.isEnabled = false }
+
+        alerts.preference.isEnabled = true
+        await alerts.preferenceDidChange()
+        #expect(notifier.authorizationRequests == 1)
+        #expect(monitor.alwaysAuthorizationRequests == 0)
         #expect(alerts.permissionStatus == nil)
     }
 
