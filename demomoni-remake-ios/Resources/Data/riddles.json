@@ -2,17 +2,291 @@
     "riddles": [
         {
             "id": 0,
+            "pieceId": 2,
             "title": "函館ののっぽ",
             "content": "函館の白くて高いものといえば？",
             "hint": "五◯郭タワー",
+            "answer": "五稜郭タワー",
             "area": "goryokaku"
         },
         {
             "id": 1,
+            "pieceId": 1,
             "title": "函館の見晴らし台",
             "content": "函館で夜景が綺麗な有名なところといえば？",
             "hint": "函◯山",
+            "answer": "函館山",
             "area": "hakodateyama"
+        },
+        {
+            "id": 2,
+            "pieceId": 0,
+            "title": "坂の上の広場",
+            "content": "元町の坂をのぼった先にある、函館の港が見える公園は？",
+            "hint": "元◯公園",
+            "answer": "元町公園",
+            "area": "motomachi"
+        },
+        {
+            "id": 3,
+            "pieceId": 3,
+            "title": "星のかたちの公園",
+            "content": "上から見ると星のかたちをしている、お堀にかこまれた公園は？",
+            "hint": "五稜◯公園",
+            "answer": "五稜郭公園",
+            "area": "goryokaku"
+        },
+        {
+            "id": 4,
+            "pieceId": 4,
+            "title": "お堀の中のおやくしょ",
+            "content": "五稜郭の中にある、むかしのおやくしょをよみがえらせた建物は？",
+            "hint": "箱館◯行所",
+            "answer": "箱館奉行所",
+            "area": "goryokaku"
+        },
+        {
+            "id": 5,
+            "pieceId": 5,
+            "title": "絵がならぶ建物",
+            "content": "五稜郭のそばにある、絵や書をかざっている北海道の美術館は？",
+            "hint": "北海道立函館◯術館",
+            "answer": "北海道立函館美術館",
+            "area": "goryokaku"
+        },
+        {
+            "id": 6,
+            "pieceId": 6,
+            "title": "本がいっぱい",
+            "content": "五稜郭公園のとなりにある、函館でいちばん大きな本の館は？",
+            "hint": "函館市中央◯書館",
+            "answer": "函館市中央図書館",
+            "area": "goryokaku"
+        },
+        {
+            "id": 7,
+            "pieceId": 7,
+            "title": "スポーツの公園",
+            "content": "野球場や陸上競技場がある、五稜郭の近くの大きな公園は？",
+            "hint": "千◯台公園",
+            "answer": "千代台公園",
+            "area": "goryokaku"
+        },
+        {
+            "id": 8,
+            "pieceId": 8,
+            "title": "赤いれんがの倉庫",
+            "content": "港のそばにならぶ、赤いれんがでできた倉庫は？",
+            "hint": "金森赤レン◯倉庫",
+            "answer": "金森赤レンガ倉庫",
+            "area": "bayarea"
+        },
+        {
+            "id": 9,
+            "pieceId": 9,
+            "title": "十字街のセンター",
+            "content": "十字街にある、むかしのデパートの建物を使った、まちづくりのセンターは？",
+            "hint": "函館市地域交流ま◯づくりセンター",
+            "answer": "函館市地域交流まちづくりセンター",
+            "area": "bayarea"
+        },
+        {
+            "id": 10,
+            "pieceId": 10,
+            "title": "朝のおいしい市場",
+            "content": "函館駅のそばで、朝早くから海の幸がならぶ市場は？",
+            "hint": "函館◯市",
+            "answer": "函館朝市",
+            "area": "ekimae"
+        },
+        {
+            "id": 11,
+            "pieceId": 11,
+            "title": "列車の玄関",
+            "content": "函館の街の玄関で、たくさんの列車が出発する駅は？",
+            "hint": "函◯駅",
+            "answer": "函館駅",
+            "area": "ekimae"
+        },
+        {
+            "id": 12,
+            "pieceId": 12,
+            "title": "港にうかぶ船",
+            "content": "函館駅の近くにうかぶ、むかし青森と函館をむすんだ連絡船は？",
+            "hint": "摩◯丸",
+            "answer": "摩周丸",
+            "area": "ekimae"
+        },
+        {
+            "id": 13,
+            "pieceId": 13,
+            "title": "海へつづく坂",
+            "content": "元町にある、まっすぐ海へむかってのびる坂は？",
+            "hint": "八◯坂",
+            "answer": "八幡坂",
+            "area": "motomachi"
+        },
+        {
+            "id": 14,
+            "pieceId": 14,
+            "title": "黄色と青の洋館",
+            "content": "元町の坂の上に建つ、青と黄色の大きな洋館は？",
+            "hint": "旧函館区公◯堂",
+            "answer": "旧函館区公会堂",
+            "area": "motomachi"
+        },
+        {
+            "id": 15,
+            "pieceId": 15,
+            "title": "ガンガン寺",
+            "content": "鐘の音から「ガンガン寺」とよばれた、白いかべと緑の屋根の教会は？",
+            "hint": "函館ハリス◯ス正教会",
+            "answer": "函館ハリストス正教会",
+            "area": "motomachi"
+        },
+        {
+            "id": 16,
+            "pieceId": 16,
+            "title": "とんがり屋根の教会",
+            "content": "元町にある、高いとんがり屋根に風見鶏がのった教会は？",
+            "hint": "カトリック元◯教会",
+            "answer": "カトリック元町教会",
+            "area": "motomachi"
+        },
+        {
+            "id": 17,
+            "pieceId": 17,
+            "title": "山のふもとの公園",
+            "content": "函館山のふもとにある、小さな遊園地がある古い公園は？",
+            "hint": "函◯公園",
+            "answer": "函館公園",
+            "area": "motomachi"
+        },
+        {
+            "id": 18,
+            "pieceId": 18,
+            "title": "海につきでた岬",
+            "content": "函館山のうらがわにある、津軽海峡が見える岬は？",
+            "hint": "立◯岬",
+            "answer": "立待岬",
+            "area": "motomachi"
+        },
+        {
+            "id": 19,
+            "pieceId": 19,
+            "title": "歌人の像がある浜",
+            "content": "大森浜にある、石川啄木の像が海を見ている小さな公園は？",
+            "hint": "啄木◯公園",
+            "answer": "啄木小公園",
+            "area": "omorihama"
+        },
+        {
+            "id": 20,
+            "pieceId": 20,
+            "title": "海辺のおんせん",
+            "content": "函館空港の近くにある、海辺のおんせん街は？",
+            "hint": "湯の◯温泉",
+            "answer": "湯の川温泉",
+            "area": "yunokawa"
+        },
+        {
+            "id": 21,
+            "pieceId": 21,
+            "title": "おサルのおふろ",
+            "content": "冬になるとおサルさんがおふろに入る、湯の川の植物園は？",
+            "hint": "函館市熱帯◯物園",
+            "answer": "函館市熱帯植物園",
+            "area": "yunokawa"
+        },
+        {
+            "id": 22,
+            "pieceId": 22,
+            "title": "もみじの庭",
+            "content": "見晴公園の中にある、秋のもみじがきれいな庭園は？",
+            "hint": "香◯園",
+            "answer": "香雪園",
+            "area": "yunokawa"
+        },
+        {
+            "id": 23,
+            "pieceId": 23,
+            "title": "丘の上の修道院",
+            "content": "湯の川の丘にある、日本ではじめての女の人の修道院は？",
+            "hint": "トラピス◯ヌ修道院",
+            "answer": "トラピスチヌ修道院",
+            "area": "yunokawa"
+        },
+        {
+            "id": 24,
+            "pieceId": 24,
+            "title": "沼と島の公園",
+            "content": "駒ヶ岳のふもとに、たくさんの小島がうかぶ沼の公園は？",
+            "hint": "大◯公園",
+            "answer": "大沼公園",
+            "area": "onuma"
+        },
+        {
+            "id": 25,
+            "pieceId": 25,
+            "title": "大沼の案内所",
+            "content": "大沼公園駅の前にある、大沼のことを教えてくれる建物は？",
+            "hint": "大沼国際交流プ◯ザ",
+            "answer": "大沼国際交流プラザ",
+            "area": "onuma"
+        },
+        {
+            "id": 26,
+            "pieceId": 26,
+            "title": "沼のほとりでキャンプ",
+            "content": "大沼の東がわにある、沼のほとりでテントをはれる場所は？",
+            "hint": "東大沼キャン◯場",
+            "answer": "東大沼キャンプ場",
+            "area": "onuma"
+        },
+        {
+            "id": 27,
+            "pieceId": 27,
+            "title": "水草の名前の沼",
+            "content": "大沼と小沼のそばにある、水草の名前がついた沼は？",
+            "hint": "じゅん◯い沼",
+            "answer": "じゅんさい沼",
+            "area": "onuma"
+        },
+        {
+            "id": 28,
+            "pieceId": 28,
+            "title": "新幹線の駅",
+            "content": "北海道新幹線がとまる、北斗市の駅は？",
+            "hint": "新函館◯斗駅",
+            "answer": "新函館北斗駅",
+            "area": "hokuto"
+        },
+        {
+            "id": 29,
+            "pieceId": 29,
+            "title": "並木道の修道院",
+            "content": "北斗市の当別にある、長い並木道の先の男の人の修道院は？",
+            "hint": "トラピ◯ト修道院",
+            "answer": "トラピスト修道院",
+            "area": "hokuto"
+        },
+        {
+            "id": 30,
+            "pieceId": 30,
+            "title": "街を見わたす高原",
+            "content": "北斗市にある、大沼や函館の街を見わたせる高原は？",
+            "hint": "き◯ひき高原",
+            "answer": "きじひき高原",
+            "area": "hokuto"
+        },
+        {
+            "id": 31,
+            "pieceId": 31,
+            "title": "音楽のホール",
+            "content": "北斗市にある、「かなでーる」とよばれるホールのある建物は？",
+            "hint": "北斗市総合文化セ◯ター",
+            "answer": "北斗市総合文化センター",
+            "area": "hokuto"
         }
     ]
 }
