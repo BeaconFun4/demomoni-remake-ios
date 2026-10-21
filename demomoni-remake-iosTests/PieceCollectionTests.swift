@@ -86,6 +86,29 @@ struct PieceCollectionTests {
         #expect(try !collection.isCollected(pieceID: 0))
     }
 
+    /// まとめて獲得すると、まだ獲得していないピースだけを足し、獲得済みのピースの日時・サインは残す
+    @Test
+    func collectAllAddsOnlyMissingPieces() throws {
+        try collection.collect(pieceID: 1, at: firstDate)
+        try collection.saveSignature(Data([7]), pieceID: 1)
+
+        #expect(try collection.collectAll(pieceIDs: [0, 1, 2], at: laterDate) == 2)
+        #expect(try collection.collectedPieceIDs() == [0, 1, 2])
+        #expect(try collection.record(pieceID: 0)?.collectedAt == laterDate)
+        #expect(try collection.record(pieceID: 1)?.collectedAt == firstDate)
+        #expect(try collection.record(pieceID: 1)?.signature == Data([7]))
+        #expect(try container.mainContext.fetch(FetchDescriptor<CollectedPiece>()).count == 3)
+    }
+
+    /// すべて獲得済み・同じ id が重なっていても、記録は 1 ピース 1 件のまま
+    @Test
+    func collectAllIgnoresCollectedAndDuplicatedIDs() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        #expect(try collection.collectAll(pieceIDs: [0, 0], at: laterDate) == 0)
+        #expect(try collection.collectAll(pieceIDs: [3, 3], at: laterDate) == 1)
+        #expect(try container.mainContext.fetch(FetchDescriptor<CollectedPiece>()).count == 2)
+    }
+
     /// ピースを外すと獲得していない状態に戻り、ほかのピースは残る
     @Test
     func removeDeletesOnlyThatPiece() throws {
