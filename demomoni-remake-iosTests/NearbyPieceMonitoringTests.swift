@@ -178,7 +178,7 @@ struct CanOpenMonitorTests {
 /// スイッチの値の保存
 @MainActor
 struct NearbyPieceAlertPreferenceTests {
-    /// 既定はオフ。切り替えたら端末に保存し、次に読んだときも同じ値
+    /// 既定はオフ・条件なし。切り替えたら端末に保存し、次に読んだときも同じ値
     @Test
     func storesValue() throws {
         let suiteName = "NearbyPieceAlertPreferenceTests-\(UUID().uuidString)"
@@ -186,20 +186,28 @@ struct NearbyPieceAlertPreferenceTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preference = NearbyPieceAlertPreference(defaults: defaults)
         #expect(!preference.isEnabled)
-        #expect(!preference.hasStoredValue)
+        #expect(!preference.mayHaveConditions)
 
         preference.isEnabled = true
-        #expect(preference.hasStoredValue)
-        #expect(NearbyPieceAlertPreference(defaults: defaults).isEnabled)
+        preference.mayHaveConditions = true
+        let reloaded = NearbyPieceAlertPreference(defaults: defaults)
+        #expect(reloaded.isEnabled)
+        #expect(reloaded.mayHaveConditions)
+
+        preference.mayHaveConditions = false
+        #expect(!NearbyPieceAlertPreference(defaults: defaults).mayHaveConditions)
     }
 
-    /// 保存先が無ければ、メモリ上だけで持つ
+    /// 保存先が無ければ、メモリ上だけで持つ（端末の値を読まず、書かない）
     @Test
     func keepsValueInMemoryWithoutDefaults() {
         let preference = NearbyPieceAlertPreference(defaults: nil)
         preference.isEnabled = true
+        preference.mayHaveConditions = true
         #expect(preference.isEnabled)
-        #expect(!preference.hasStoredValue)
-        #expect(!NearbyPieceAlertPreference(defaults: nil).isEnabled)
+        #expect(preference.mayHaveConditions)
+        let other = NearbyPieceAlertPreference(defaults: nil)
+        #expect(!other.isEnabled)
+        #expect(!other.mayHaveConditions)
     }
 }
