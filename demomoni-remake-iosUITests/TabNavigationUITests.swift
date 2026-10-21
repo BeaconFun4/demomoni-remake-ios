@@ -15,21 +15,24 @@ final class TabNavigationUITests: XCTestCase {
     @MainActor
     func testLaunchSelectsSearchTab() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["さがす画面"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["まちをあるいてみよう！！"].waitForExistence(timeout: 5))
     }
 
     /// タブを押すと、その画面に切り替わる
     @MainActor
     func testTabsSwitchScreens() throws {
         let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
         app.launch()
 
-        app.tabBars.buttons["なぞなぞ"].tap()
-        XCTAssertTrue(app.staticTexts["なぞなぞ画面"].waitForExistence(timeout: 5))
+        app.tabButton("なぞなぞ").tap()
+        XCTAssertTrue(app.navigationBars["なぞなぞ"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["函館ののっぽ"].exists)
 
-        app.tabBars.buttons["いちらん"].tap()
-        XCTAssertTrue(app.staticTexts["いちらん画面"].waitForExistence(timeout: 5))
+        app.tabButton("いちらん").tap()
+        XCTAssertTrue(app.navigationBars["いちらん"].waitForExistence(timeout: 5))
     }
 }

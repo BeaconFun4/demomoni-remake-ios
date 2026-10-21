@@ -4,7 +4,7 @@
 ## 開発環境
 
 - Xcode 26.6
-- iOS 17.4 以上（iPhone / iPad）・macOS 14.3 以上
+- iOS 26.0 以上（iPhone / iPad）
 - Swift 6（Swift 6 言語モード / Strict Concurrency）
 - SwiftUI / Swift Testing / XCTest（UI テスト）
 - SwiftLint 0.65.1（Build Tool Plugin。バイナリだけを配布する [SwiftLintPlugins](https://github.com/SimplyDanny/SwiftLintPlugins) 経由）
@@ -15,6 +15,34 @@
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
 - ビルド・テストのコマンドは [CLAUDE.md](CLAUDE.md) の Commands にあります
+
+## アプリの構成
+
+元アプリ（UIKit + Storyboard）の画面・文言・色・画像を、SwiftUI の標準のコンポーネントと Liquid Glass で作り直しています。
+
+| タブ | 画面 |
+| --- | --- |
+| なぞなぞ | なぞなぞの一覧 → 詳細（問題文・「ヒントをみる」） |
+| さがす（初期） | 歩くうさぎと道・チュートリアル。表示している間だけ近くの iBeacon を探し、まだ獲得していないピースを見つけると「ピースをゲットしたよ！！」を出して保存します |
+| いちらん | 五稜郭の盤（4 × 8 = 32 マス）に獲得したピースを並べます → ピース詳細 → PencilKit でサインを描いて保存 |
+
+- 同梱データ（ビーコン・ピース・なぞなぞ）は `demomoni-remake-ios/Resources/Data/` の JSON です
+- 獲得状態・日時・サインは SwiftData で端末の中に保存します。位置情報は端末の中だけで使い、外へ送りません
+- iBeacon の検知は CoreLocation の ranging（位置情報の「使用中の許可」と「正確な位置情報」が要ります）で、Simulator では動きません。実機での確認は Issue にまとめています
+
+### UI テスト・スクリーンショット用の起動引数
+
+| 引数 | 動き |
+| --- | --- |
+| `-uiTesting` | メモリ上の空のストアで起動し、実際の位置情報を使いません |
+| `-fakeBeaconID <id>` | 探し始めて 2 秒後に、その beaconId のビーコンを見つけたことにします（擬似検知） |
+| `-collectedPieceIDs <id>,<id>` | `-uiTesting` と一緒に使い、そのピースを獲得済みにして起動します |
+
+### フォント・画像のライセンス
+
+- 文字はニコモジ+（`nicomoji-plus_1.11.ttf`）です。SIL Open Font License 1.1 で、本文と著作権表示を [NicoMojiPlus-OFL.txt](demomoni-remake-ios/Resources/Fonts/NicoMojiPlus-OFL.txt) に置いています
+- 元アプリの見出しなどに使っていたうずらフォント（`uzura.ttf`）は、作者の規約で再配布が禁止されているため入れていません（このリポジトリは public です）
+- 人物の写った画像（元アプリの `piece14_family`・`notsign_piece`）は入れていません。サインの画面の背景はピースの画像にしています
 
 ## CI
 
@@ -33,7 +61,7 @@ Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml
 
 - ドキュメントだけの変更（`**/*.md`、`docs/**`）では Build を実行しません（Archive / Upload は実行します）
 - Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) と [.github/workflows/_archive.yml](.github/workflows/_archive.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
-- 確かめるのは iOS の Simulator だけです。macOS のビルドは手元で確かめます
+- 確かめるのは iOS の Simulator だけです
 
 ### Archive / Upload（App Store Connect への配信）
 

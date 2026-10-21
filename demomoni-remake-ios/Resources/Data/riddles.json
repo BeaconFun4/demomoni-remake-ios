@@ -1,0 +1,18 @@
+{
+    "riddles": [
+        {
+            "id": 0,
+            "title": "函館ののっぽ",
+            "content": "函館の白くて高いものといえば？",
+            "hint": "五◯郭タワー",
+            "area": "goryokaku"
+        },
+        {
+            "id": 1,
+            "title": "函館の見晴らし台",
+            "content": "函館で夜景が綺麗な有名なところといえば？",
+            "hint": "函◯山",
+            "area": "hakodateyama"
+        }
+    ]
+}
