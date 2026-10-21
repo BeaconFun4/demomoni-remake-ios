@@ -29,3 +29,7 @@
 - 同梱のビーコンは 32 台あり、`CLMonitor` の条件の上限（20）を超える。未獲得が 20 台を超える間は UUID ごとの条件にまとめ、どのビーコンかは出来事の `refinement` で読む（`NearbyPieceMonitoring.conditions`）（2026-10-22）
 - `CLMonitor` の条件はアプリを終えても残る。identifier にビーコンの UUID・major・minor を入れないと、`beacons.json` の値を変えたときに古い条件が残り、黙って検知しなくなる（2026-10-22）
 - `CLMonitor` は actor なので、`events` も外からは `await` で読む（`let` でも）（2026-10-22）
+
+## アイコン・画像のスクリプト
+
+- 今のアイコンの PNG（`demomoni-AppIcon.png`）は色のプロファイルを持たない。`NSBitmapImageRep.colorAt(x:y:)` を `usingColorSpace(.sRGB)` で読むと色が変換されて値がずれる（背景の水色 `#ACE2F2` が `#B8E7F4` に読める）。画素の値を測るときは、`CGImageSource` で読んだ `CGImage` を `copy(colorSpace: sRGB)` して sRGB の `CGContext` に描き、バイトを直接読む（`scripts/make-app-icon-layers.swift`）（2026-10-22）
