@@ -49,6 +49,13 @@ struct PieceBoardLayoutTests {
         #expect(PieceBoardLayout.aspectRatio == image.size.width / image.size.height)
     }
 
+    /// 盤のすべてのマスに、400 × 400 のピースの画像がある（scripts/make-piece-images.swift で goryokaku_long を切り出したもの）
+    @Test(arguments: PieceBoardLayout.numbers)
+    func everyCellHasPieceImage(number: Int) throws {
+        let image = try #require(UIImage(named: "piece\(number)"))
+        #expect(image.size == CGSize(width: 400, height: 400))
+    }
+
     /// 同梱データのピースはすべて、盤の番号と画像のアセットを持つ
     @Test
     func bundledPiecesHaveNumberAndImage() {
