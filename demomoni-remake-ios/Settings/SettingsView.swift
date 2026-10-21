@@ -50,17 +50,26 @@ private struct NearbyPieceAlertSection: View {
     var body: some View {
         Section {
             Toggle("アプリを閉じていても、近くのピースを知らせる", isOn: isEnabled)
-            if let message = NearbyAlertPermissionStatus.message(isEnabled: alerts.preference.isEnabled, status: alerts.permissionStatus) {
-                LocationPermissionNotice(message: message)
-                    .frame(maxWidth: .infinity)
-                    .listRowBackground(Color.clear)
-            }
         } header: {
             Text("おしらせ")
         } footer: {
-            Text("まだゲットしていないピースの近くに来たら、通知でおしらせするよ")
-                .font(.demomoni(size: 14, relativeTo: .footnote))
+            // 案内は行ではなく footer に置く（行にするとスイッチの行のカードが途中で切れて見える）
+            VStack(spacing: 12) {
+                if let message {
+                    LocationPermissionNotice(message: message)
+                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(Color.primary)
+                }
+                Text("まだゲットしていないピースの近くに来たら、通知でおしらせするよ")
+                    .font(.demomoni(size: 14, relativeTo: .footnote))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
+    }
+
+    /// 足りない許可の案内。オフのとき・許可がそろっているときは `nil`
+    private var message: String? {
+        NearbyAlertPermissionStatus.message(isEnabled: alerts.preference.isEnabled, status: alerts.permissionStatus)
     }
 
     /// スイッチの値。切り替えたらすぐに保存し、許可を尋ねて見張るかを決め直す
