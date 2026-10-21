@@ -56,7 +56,15 @@ Xcode は `_build.yml` の `xcode-version`（26.6）で固定し、iOS の Simul
 - 作業ブランチへの push は Unit テストだけ。PR の作成時と `develop` / `main` / `release/**` への push は UI テストも実行する
 - ループの子 PR（`epic/**` 宛て）では PR のイベントで実行しない（push の Unit テストで確かめる）。最終 PR（`epic/**` → `develop`）は更新のたびに UI テストまで実行する
 - ドキュメントだけの変更（`**/*.md`・`docs/**`）では実行しない
-- Archive / Upload（App Store Connect への配信）のワークフローは無い（Secrets が未登録）
+
+Archive / Upload（`archive.yml` / `upload.yml` → `_archive.yml`。template-app-ios と同じ）が、App Store Connect の API Key で Archive → IPA Export（→ アップロード）する。
+Secrets（`APPLE_API_KEY_BASE64`・`APPLE_API_KEY_ID`・`APPLE_API_ISSUER_ID`・`EXPORT_OPTIONS`）は BeaconFun4 の Organization に登録してある。
+
+- Upload は `develop` / `release/**` への push（ドキュメントだけの変更でも）。ループの最終 PR を `develop` にマージすると TestFlight にビルドが上がる
+- Archive（IPA Export まで。アップロードしない）は `main` への push。どちらも手動実行（workflow_dispatch）できる
+- ビルド番号は Xcode が App Store Connect の最新ビルドを見て採番するので、`CURRENT_PROJECT_VERSION` は上げない
+- Xcode は `_archive.yml` の `xcode-version` でも固定している。`_build.yml` と同じ値にそろえる
+- App Store の掲載情報（スクリーンショット・説明文・ヘッダー）のワークフローはまだ無い（#64）
 
 `.github/workflows/close-goal-discussion.yml` は epic の最終 PR のマージでゴール元の Discussion を閉じるだけ。
 
