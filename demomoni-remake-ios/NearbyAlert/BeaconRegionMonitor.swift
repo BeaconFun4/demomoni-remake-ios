@@ -23,7 +23,7 @@ protocol BeaconRegionMonitor: AnyObject {
     /// 位置情報の許可が無い・未決定で `CLMonitor` を開けなければ何もせず `false` を返す
     @discardableResult
     func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool
-    /// 見張る条件をすべて外す。条件はアプリを終えても残るので、オフにしたとき・オフのまま起動したときに呼ぶ。
+    /// 見張る条件をすべて外す。条件はアプリを終えても残るので、オフにした直後に呼ぶ（起動時には呼ばない。#120）。
     /// 位置情報の許可が無い・未決定で `CLMonitor` を開けなければ何もせず `false` を返す（条件は残る）
     @discardableResult
     func removeAllConditions() async -> Bool
@@ -32,7 +32,8 @@ protocol BeaconRegionMonitor: AnyObject {
 /// `CLMonitor` の `BeaconIdentityCondition` でビーコンの範囲を見張る。
 /// 同じ名前の `CLMonitor` を 2 つ開かないよう、プロセスで 1 つの共有インスタンス（`shared`）だけを使い、開く処理は `OpenOnce` で 1 回にまとめる（#120）
 final class CoreLocationBeaconRegionMonitor: BeaconRegionMonitor {
-    /// プロセスで 1 つだけの見張り。`NearbyPieceAlerts.live` を何度呼んでも、これを使う
+    /// プロセスで 1 つだけの見張り。`NearbyPieceAlerts.live` を何度呼んでも、これを使う。
+    /// `events` を受けるのは `NearbyPieceAlerts` の 1 か所だけの前提（`live` はアプリの起動で 1 回だけ呼ぶ。2 つが受けると出来事が分かれて届く）
     static let shared = CoreLocationBeaconRegionMonitor()
 
     let events: AsyncStream<BeaconRegionEvent>
