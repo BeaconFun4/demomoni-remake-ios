@@ -46,21 +46,48 @@
 
 ## CI
 
-GitHub Actions の Build（[.github/workflows/build.yml](.github/workflows/build.yml)）で、SwiftLint（`--strict`）・ビルド・テストを実行します。
+GitHub Actions で、Build（[.github/workflows/build.yml](.github/workflows/build.yml)）が SwiftLint（`--strict`）・ビルド・テストを、
+Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml)・[.github/workflows/upload.yml](.github/workflows/upload.yml)）が App Store Connect への配信を実行します。
 
-| きっかけ | Build（ビルド + テスト + SwiftLint） |
-|---|:-:|
-| `main` / `develop` / `release/**` への push | ✅（UI テストも） |
-| その他の作業ブランチへの push | ✅（Unit テストのみ） |
-| Pull Request の作成時（opened / reopened / ready_for_review） | ✅（UI テストも） |
-| `epic/**` 宛ての Pull Request（ralph-loop の子 PR） | （push の Unit テストで確かめる） |
-| `epic/**` から `develop` などへの Pull Request（ralph-loop の最終 PR） | ✅（更新のたびに UI テストも） |
-| Fork からの Pull Request | ✅（UI テストも） |
+| きっかけ | Build（ビルド + テスト + SwiftLint） | Archive（IPA Export） | Upload（App Store Connect） |
+|---|:-:|:-:|:-:|
+| `main` への push | ✅（UI テストも） | ✅ | |
+| `develop` / `release/**` への push | ✅（UI テストも） | | ✅ |
+| その他の作業ブランチへの push | ✅（Unit テストのみ） | | |
+| Pull Request の作成時（opened / reopened / ready_for_review） | ✅（UI テストも） | | |
+| `epic/**` 宛ての Pull Request（ralph-loop の子 PR） | （push の Unit テストで確かめる） | | |
+| `epic/**` から `develop` などへの Pull Request（ralph-loop の最終 PR） | ✅（更新のたびに UI テストも） | | |
+| Fork からの Pull Request | ✅（UI テストも） | | |
 
-- ドキュメントだけの変更（`**/*.md`、`docs/**`）では実行しません
-- Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
+- ドキュメントだけの変更（`**/*.md`、`docs/**`）では Build を実行しません（Archive / Upload は実行します）
+- Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) と [.github/workflows/_archive.yml](.github/workflows/_archive.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
 - 確かめるのは iOS の Simulator だけです
-- Archive / Upload（App Store Connect への配信）のワークフローはまだありません
+
+### Archive / Upload（App Store Connect への配信）
+
+template-app-ios と同じ構成で、App Store Connect の API Key で認証します（Apple ID は使いません）。
+
+- Upload は Archive → IPA Export → App Store Connect へのアップロードまで行います。`develop` / `release/**` への push（PR のマージ）のたびに、TestFlight にビルドが上がります
+- ビルド番号は、アップロードのときに App Store Connect の最新ビルドを見て Xcode が自動で増やします。`CURRENT_PROJECT_VERSION` は手で上げません。バージョン（`MARKETING_VERSION`）はリリースのときに [Configs/Project.xcconfig](Configs/Project.xcconfig) で上げます
+- Archive / Upload は Actions タブから手動でも実行できます（Run workflow）。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
+- 実行中の Upload は、次の push が来ても取り消しません（途中で止めると App Store Connect に中途半端なビルドが残るため）
+- App Store Connect にアプリが無いと、Upload はアップロードの前に止まり、「新規アプリ」画面に入力する値（バンドル ID・SKU など）を Job Summary に出します。アプリを作ってから再実行します
+
+Secrets は BeaconFun4 の Organization に登録してあります（Settings → Secrets and variables → Actions）。
+
+| Secret | 内容 |
+|---|---|
+| `EXPORT_OPTIONS` | `ExportOptions.plist` の内容（[docs/ExportOptions.sample.plist](docs/ExportOptions.sample.plist) の `teamID` を書き換えたもの） |
+| `APPLE_API_KEY_BASE64` | App Store Connect の API Key（`.p8`）を base64 にした文字列。API Key は App Manager 以上の権限で発行します |
+| `APPLE_API_KEY_ID` | API Key の Key ID |
+| `APPLE_API_ISSUER_ID` | API Key の Issuer ID |
+
+| 変数 | 内容 |
+|---|---|
+| `TESTFLIGHT_INTERNAL_TESTERS` | TestFlight の内部テスターにするメールアドレス（カンマ区切り）。Upload が内部テストグループ「Internal Testers」を作って追加し、以降のビルドは処理が終わりしだい配信されます。空なら何もしません |
+| `ENABLE_DELIVERY` | `false` にすると Upload をスキップします。未設定なら実行します |
+
+App Store の掲載情報（スクリーンショット・説明文・ヘッダー）のワークフローはまだありません（#64）。
 
 ### 卍Github運用について✒卍
 
