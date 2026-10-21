@@ -43,7 +43,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
-  - `Settings/` … せってい（アプリのバージョン・ニコモジ+ のライセンスの本文）。App Store 版でも空にならない項目だけを置く
+  - `Settings/` … せってい（アプリのバージョン・ニコモジ+ のライセンスの本文）。App Store 版でも空にならない項目を置く（デバッグ用の項目は `#if DEBUG` の中に置く）
 - 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
 
 データと状態:
