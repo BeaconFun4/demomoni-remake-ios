@@ -30,6 +30,36 @@ final class DebugModeUITests: XCTestCase {
         return inner.exists ? inner : row
     }
 
+    /// ピースを選んで擬似検知すると、さがすタブに切り替わり「ピースをゲットしたよ！！」が出て、獲得が保存される
+    @MainActor
+    func testFakeDetectionShowsGotPiece() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
+        app.launch()
+
+        openDebugMode(app)
+        app.buttons["ピースを選んで擬似検知する"].tap()
+        let tower = app.buttons["No.2 五稜郭タワー"]
+        XCTAssertTrue(tower.waitForExistence(timeout: 5))
+        tower.tap()
+
+        let title = app.staticTexts["ピースをゲットしたよ！！"]
+        XCTAssertTrue(title.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.staticTexts["五稜郭タワー"].exists)
+        app.buttons["とじる"].tap()
+        XCTAssertTrue(title.waitForNonExistence(timeout: 5))
+
+        // さがすタブにいて、獲得したピースが盤に出る
+        XCTAssertTrue(app.staticTexts["まちをあるいてみよう！！"].waitForExistence(timeout: 5))
+        app.tabButton("いちらん").tap()
+        XCTAssertTrue(app.buttons["ピース No.2 五稜郭タワー"].waitForExistence(timeout: 5))
+
+        // 獲得したピースは、擬似検知の一覧から消える
+        app.tabButton("せってい").tap()
+        XCTAssertTrue(app.navigationBars["擬似検知"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["No.2 五稜郭タワー"].exists)
+    }
+
     /// ピースを 1 つ埋めると盤に出て、外すと消える
     @MainActor
     func testFillAndRemoveOnePiece() throws {

@@ -8,7 +8,8 @@ import SwiftData
 import SwiftUI
 
 /// デバッグモード（Debug 構成だけ。App Store 版には入れない）。
-/// ピースを 1 つずつ埋める・外す、全部埋める、全部リセットする。書き込みは `PieceCollection` だけで行う
+/// ピースを 1 つずつ埋める・外す、全部埋める、全部リセットする。書き込みは `PieceCollection` だけで行う。
+/// ピースを選んで擬似検知し、さがすタブの「ゲットした」画面まで通すこともできる
 struct DebugModeView: View {
     @Environment(\.catalog) private var catalog
     @Environment(\.modelContext) private var modelContext
@@ -37,6 +38,16 @@ struct DebugModeView: View {
                 }
             } header: {
                 Text("ぜんぶ（\(collected.count) / \(catalog.pieces.count) こ）")
+            }
+
+            Section {
+                NavigationLink("ピースを選んで擬似検知する") {
+                    DebugFakeDetectionView()
+                }
+            } header: {
+                Text("ぎじけんち")
+            } footer: {
+                Text("選ぶとさがすタブに切り替わり、ビーコンを見つけたときと同じく「ピースをゲットしたよ！！」が出ます")
             }
 
             Section("ピース") {

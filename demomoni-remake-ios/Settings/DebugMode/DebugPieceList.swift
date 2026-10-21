@@ -21,6 +21,12 @@ nonisolated enum DebugPieceList {
         }
     }
 
+    /// 擬似検知で選べるピース（まだ獲得していないもの）を、盤の番号の順に並べる。
+    /// 獲得済みのピースを検知しても「ゲットした」画面は出ないので、選べないようにする
+    static func detectableRows(pieces: [Piece], collectedPieceIDs: Set<Int>) -> [Row] {
+        rows(pieces: pieces, collectedPieceIDs: collectedPieceIDs).filter { !$0.isCollected }
+    }
+
     /// ピースを盤の番号の順（番号の無いものは最後に id の順）に並べ、獲得済みかを添える
     static func rows(pieces: [Piece], collectedPieceIDs: Set<Int>) -> [Row] {
         pieces
