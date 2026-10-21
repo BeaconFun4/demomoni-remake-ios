@@ -3,6 +3,7 @@
 //  demomoni-remake-iosTests
 //
 
+import CoreLocation
 @testable import demomoni_remake_ios
 import Foundation
 import Testing
@@ -136,6 +137,41 @@ struct NearbyPieceMonitoringTests {
         #expect(notification.title == "近くにピースがあるよ！")
         #expect(notification.body == "さがすタブをひらいて、ピースをゲットしよう")
         #expect(NearbyPieceMonitoring.notification(for: piece) == notification)
+    }
+}
+
+/// CLMonitor を開いてよいかの判定（#120）
+struct CanOpenMonitorTests {
+    /// 位置情報が「常に」か「使用中」のときだけ開く。未決定・拒否・制限・分からない値では開かない
+    @Test(arguments: [
+        (LocationAuthorization.always, true),
+        (.whenInUse, true),
+        (.notDetermined, false),
+        (.denied, false),
+        (.restricted, false),
+        (.unknown, false)
+    ])
+    func opensOnlyWhenAuthorized(authorization: LocationAuthorization, expected: Bool) {
+        #expect(NearbyPieceMonitoring.canOpenMonitor(authorization) == expected)
+    }
+
+    /// CoreLocation の許可の状態を写す。今の SDK に無い値は `unknown` にする
+    @Test(arguments: [
+        (CLAuthorizationStatus.notDetermined, LocationAuthorization.notDetermined),
+        (.restricted, .restricted),
+        (.denied, .denied),
+        (.authorizedAlways, .always),
+        (.authorizedWhenInUse, .whenInUse)
+    ])
+    func mapsAuthorizationStatus(status: CLAuthorizationStatus, expected: LocationAuthorization) {
+        #expect(LocationAuthorization(status) == expected)
+    }
+
+    @Test
+    func mapsUnknownAuthorizationStatus() throws {
+        let unknown = try #require(CLAuthorizationStatus(rawValue: 99))
+        #expect(LocationAuthorization(unknown) == .unknown)
+        #expect(!NearbyPieceMonitoring.canOpenMonitor(LocationAuthorization(unknown)))
     }
 }
 
