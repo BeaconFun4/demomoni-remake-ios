@@ -32,9 +32,11 @@ struct SettingsView: View {
     }
 }
 
-/// ニコモジ+ のライセンスの本文（英語の原文のまま出す）
+/// ニコモジ+ のライセンスの本文（英語の原文のまま出す）。
+/// 英語の長い文なので、ニコモジ+ ではなく等幅の小さい文字にし、読みやすいよう背景を白にする
 private struct FontLicenseView: View {
-    private let text = SettingsInfo.fontLicenseText() ?? "ライセンスの本文を読み込めませんでした"
+    /// 本文。`NavigationLink` が行を描くたびにこの View を作るので、ファイルは画面を開いたときに読む
+    @State private var text = ""
 
     var body: some View {
         ScrollView {
@@ -47,6 +49,9 @@ private struct FontLicenseView: View {
         .background(Color.white)
         .navigationTitle("ニコモジ+")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            text = SettingsInfo.fontLicenseText() ?? "ライセンスの本文を読み込めませんでした"
+        }
     }
 }
 
