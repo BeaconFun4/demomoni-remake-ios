@@ -2,10 +2,11 @@
 //
 //  make-debug-app-icon.swift
 //
-//  Debug 構成のアプリのアイコン（AppIcon-Debug）を、元のアイコン（AppIcon）の下部に「debug」と書いて作る。
+//  Debug 構成のアプリのアイコン（AppIcon-Debug）を、アイコンの元の絵（docs/app-icon/demomoni-AppIcon.png）の下部に「debug」と書いて作る。
 //  Debug 構成のビルドを jp.shilokuma.Demomoni-debug として TestFlight に配るときに、App Store 版と見分けるため。
 //
-//  - 元のアイコンの下に、線の色に近い濃いグレーの帯を敷き、白い太字で「debug」と書く
+//  - App Store 版のアイコン（AppIcon.icon。Liquid Glass）と違い、平面の 1 枚の画像のまま
+//  - 元の絵の下に、線の色に近い濃いグレーの帯を敷き、白い太字で「debug」と書く
 //  - App Store Connect は透明な画素のあるアイコンを受け付けないので、不透明な PNG にする
 //
 //  使い方（リポジトリの直下で）: swift scripts/make-debug-app-icon.swift
@@ -14,7 +15,7 @@
 import AppKit
 
 let assets = "demomoni-remake-ios/Assets.xcassets"
-let sourcePath = "\(assets)/AppIcon.appiconset/demomoni-AppIcon.png"
+let sourcePath = "docs/app-icon/demomoni-AppIcon.png"
 let directory = "\(assets)/AppIcon-Debug.appiconset"
 let fileName = "demomoni-AppIcon-Debug.png"
 let size = 1024

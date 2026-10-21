@@ -33,3 +33,6 @@
 ## アイコン・画像のスクリプト
 
 - 今のアイコンの PNG（`demomoni-AppIcon.png`）は色のプロファイルを持たない。`NSBitmapImageRep.colorAt(x:y:)` を `usingColorSpace(.sRGB)` で読むと色が変換されて値がずれる（背景の水色 `#ACE2F2` が `#B8E7F4` に読める）。画素の値を測るときは、`CGImageSource` で読んだ `CGImage` を `copy(colorSpace: sRGB)` して sRGB の `CGContext` に描き、バイトを直接読む（`scripts/make-app-icon-layers.swift`）（2026-10-22）
+- `AppIcon.icon` を `demomoni-remake-ios/` の下に置くと、`APP_ICON_NAME = AppIcon` のまま actool が拾い、Release 構成のビルドで `AppIcon60x60@2x.png`・`AppIcon76x76@2x~ipad.png` を書き出す（pbxproj・xcconfig は変えていない）。同じ名前の `AppIcon.appiconset` は消した（2026-10-22）
+- `ictool <.icon> --export-image …` は書き出すたびに標準出力へ `{` と `}` の 2 行を出す。エラーではない（終了コードで見る）（2026-10-22）
+- `icon.json` の背景の塗りは `"fill" : { "solid" : "srgb:<r>,<g>,<b>,1.00000" }`（0〜1 の小数 5 桁）。`scripts/make-app-icon-layers.swift` が元の絵の水色をこの形で表示する（2026-10-22）
