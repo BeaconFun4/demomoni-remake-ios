@@ -8,83 +8,6 @@ import Foundation
 import SwiftData
 import Testing
 
-/// テストから許可と出来事を決められる見張り
-private final class StubBeaconRegionMonitor: BeaconRegionMonitor {
-    let events: AsyncStream<BeaconRegionEvent>
-    var isAlwaysAuthorized: Bool
-    var hasFullAccuracy = true
-    private(set) var alwaysAuthorizationRequests = 0
-    private(set) var conditions: [MonitoredBeacon]?
-    private(set) var removeAllCount = 0
-    private(set) var sessions: [StubAlwaysSession] = []
-    private let continuation: AsyncStream<BeaconRegionEvent>.Continuation
-
-    init(isAlwaysAuthorized: Bool) {
-        (events, continuation) = AsyncStream.makeStream(of: BeaconRegionEvent.self)
-        self.isAlwaysAuthorized = isAlwaysAuthorized
-    }
-
-    /// 終えていない session の数
-    var activeSessionCount: Int {
-        sessions.count { !$0.isInvalidated }
-    }
-
-    func requestAlwaysAuthorizationIfNeeded() {
-        alwaysAuthorizationRequests += 1
-    }
-
-    func makeAlwaysSession() -> any LocationSession {
-        let session = StubAlwaysSession()
-        sessions.append(session)
-        return session
-    }
-
-    func setConditions(_ conditions: [MonitoredBeacon]) async {
-        self.conditions = conditions
-    }
-
-    func removeAllConditions() async {
-        conditions = nil
-        removeAllCount += 1
-    }
-}
-
-private final class StubAlwaysSession: LocationSession {
-    private(set) var isInvalidated = false
-
-    func invalidate() {
-        isInvalidated = true
-    }
-}
-
-private final class StubPieceNotifier: PieceNotifier {
-    var isAllowed: Bool
-    private(set) var posted: [PieceNotificationContent] = []
-    /// 通知の許可を確かめたときに呼ぶ（確かめる前に何が済んでいるかを見るため）
-    var onCheckAuthorization: (() -> Void)?
-    /// 通知の許可を尋ねたときに呼ぶ（尋ねている間に利用者がしたことを入れるため）
-    var onRequestAuthorization: (() -> Void)?
-    private(set) var authorizationRequests = 0
-
-    init(isAllowed: Bool) {
-        self.isAllowed = isAllowed
-    }
-
-    func areNotificationsAllowed() async -> Bool {
-        onCheckAuthorization?()
-        return isAllowed
-    }
-
-    func requestAuthorization() async {
-        authorizationRequests += 1
-        onRequestAuthorization?()
-    }
-
-    func post(_ notification: PieceNotificationContent) async {
-        posted.append(notification)
-    }
-}
-
 /// スイッチ・許可と、CLMonitor の条件・session・通知のつながり
 @MainActor
 @Suite(.timeLimit(.minutes(1)))
@@ -103,23 +26,21 @@ struct NearbyPieceAlertsTests {
 
     private func makeAlerts(
         isEnabled: Bool,
+        mayHaveConditions: Bool = false,
         defaults: UserDefaults? = nil,
         monitor: StubBeaconRegionMonitor,
         notifier: StubPieceNotifier,
         container: ModelContainer,
         isAppActive: Bool = false
     ) -> NearbyPieceAlerts {
-        let preference = NearbyPieceAlertPreference(defaults: defaults)
-        if isEnabled {
-            preference.isEnabled = true
-        }
-        return NearbyPieceAlerts(
-            preference: preference,
-            catalog: catalog,
-            container: container,
+        .stub(
+            isEnabled: isEnabled,
+            mayHaveConditions: mayHaveConditions,
+            defaults: defaults,
             monitor: monitor,
             notifier: notifier,
-            isAppActive: { isAppActive }
+            container: container,
+            isAppActive: isAppActive
         )
     }
 
@@ -147,6 +68,7 @@ struct NearbyPieceAlertsTests {
         #expect(alerts.isMonitoring)
         #expect(monitor.activeSessionCount == 1)
         #expect(monitor.conditions?.map(\.identifier) == [try identifier(pieceID: 3)])
+        #expect(alerts.preference.mayHaveConditions)
 
         await alerts.refresh()
         #expect(monitor.sessions.count == 1)
@@ -184,12 +106,31 @@ struct NearbyPieceAlertsTests {
         #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: collected[0])) } == false)
     }
 
-    /// オンでも、位置情報が「常に」でない・通知が許可されていなければ見張らない（条件を外し、session を持たない）
+    /// CLMonitor を開けなかったら（位置情報の許可が無い・未決定）、見張っていることにしない
+    @Test
+    func doesNotMonitorWhenMonitorCannotOpen() async throws {
+        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        monitor.canOpenMonitor = false
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
+
+        await alerts.refresh()
+        #expect(!alerts.isMonitoring)
+        #expect(monitor.conditions == nil)
+
+        monitor.canOpenMonitor = true
+        await alerts.refresh()
+        #expect(alerts.isMonitoring)
+        #expect(monitor.conditions?.isEmpty == false)
+    }
+
+    /// オンでも、位置情報が「常に」でない・通知が許可されていなければ見張らない（session を持たない）。
+    /// 条件は外さず、CLMonitor を開かない（#120）
     @Test(arguments: [(false, true), (true, false)])
     func doesNotMonitorWithoutPermission(isAlwaysAuthorized: Bool, areNotificationsAllowed: Bool) async throws {
         let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: isAlwaysAuthorized)
         let alerts = makeAlerts(
             isEnabled: true,
+            mayHaveConditions: true,
             monitor: monitor,
             notifier: StubPieceNotifier(isAllowed: areNotificationsAllowed),
             container: try .demomoni(inMemory: true)
@@ -198,8 +139,9 @@ struct NearbyPieceAlertsTests {
         await alerts.refresh()
         #expect(!alerts.isMonitoring)
         #expect(monitor.conditions == nil)
-        #expect(monitor.removeAllCount == 1)
+        #expect(monitor.removeAllCount == 0)
         #expect(monitor.activeSessionCount == 0)
+        #expect(alerts.preference.mayHaveConditions)
     }
 
     /// オンにしたときだけ、通知と位置情報の「常に許可」を尋ね、許可の状態を読む。オフにしたら尋ねず、状態も持たない
@@ -273,42 +215,6 @@ struct NearbyPieceAlertsTests {
         #expect(alerts.permissionStatus?.hasFullAccuracy == false)
     }
 
-    /// オフにしたら、条件をすべて外して session を終える
-    @Test
-    func stopsMonitoringWhenDisabled() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
-        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
-        await alerts.refresh()
-        #expect(alerts.isMonitoring)
-
-        alerts.preference.isEnabled = false
-        await alerts.refresh()
-        #expect(!alerts.isMonitoring)
-        #expect(monitor.conditions == nil)
-        #expect(monitor.activeSessionCount == 0)
-    }
-
-    /// 前にオンにしたことがあれば、オフのまま起動したときも条件を外す（CLMonitor の条件はアプリを終えても残る）
-    @Test
-    func removesConditionsWhenLaunchedDisabled() async throws {
-        let suiteName = "NearbyPieceAlertsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(false, forKey: NearbyPieceAlertPreference.key)
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
-        let alerts = makeAlerts(
-            isEnabled: false,
-            defaults: defaults,
-            monitor: monitor,
-            notifier: StubPieceNotifier(isAllowed: true),
-            container: try .demomoni(inMemory: true)
-        )
-
-        await alerts.refresh()
-        #expect(monitor.removeAllCount == 1)
-        #expect(monitor.sessions.isEmpty)
-    }
-
     /// オンにしたことが無ければ、CLMonitor に触れない（スイッチがオフの人の挙動を変えない）
     @Test
     func doesNothingWhenNeverEnabled() async throws {
@@ -363,7 +269,7 @@ struct NearbyPieceAlertsTests {
             container: try .demomoni(inMemory: true)
         )
         #expect(!alerts.preference.isEnabled)
-        #expect(!alerts.preference.hasStoredValue)
+        #expect(!alerts.preference.mayHaveConditions)
 
         alerts.preference.isEnabled = true
         await alerts.refresh()

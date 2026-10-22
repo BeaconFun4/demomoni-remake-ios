@@ -29,6 +29,11 @@
 - 同梱のビーコンは 32 台あり、`CLMonitor` の条件の上限（20）を超える。未獲得が 20 台を超える間は UUID ごとの条件にまとめ、どのビーコンかは出来事の `refinement` で読む（`NearbyPieceMonitoring.conditions`）（2026-10-22）
 - `CLMonitor` の条件はアプリを終えても残る。identifier にビーコンの UUID・major・minor を入れないと、`beacons.json` の値を変えたときに古い条件が残り、黙って検知しなくなる（2026-10-22）
 - `CLMonitor` は actor なので、`events` も外からは `await` で読む（`let` でも）（2026-10-22）
+- TestFlight の 1.0 (4)（iOS 27.0）で、起動から約 0.2 秒で `CLMonitor.init(_:)` の中の assertion（`+[CLMonitor _requestMonitorWithConfiguration:locationManager:completion:]`）で落ちた。Exception Reason が無く原因は確定していない（#120）。次の 3 つで防いでいる（2026-10-22）
+  - 起動直後に片付けのためだけに `CLMonitor` を開かない（条件を外すのはオフにした直後だけ。「条件が残っているかもしれない」を `UserDefaults` に記録する）
+  - 同じ名前の `CLMonitor` を同じプロセスで 2 つ開かない（2 つ目で assert するという報告がある）。`await CLMonitor(...)` の前後で確かめるだけでは、待っている間の呼び出しが 2 つ目を開くので、開く `Task` を持って同じものを待たせる（`OpenOnce`）
+  - 位置情報の許可を確かめてから開く（未決定・拒否・制限では開かない）
+- `CLMonitor`・`CLServiceSession` は UI テスト・Unit テストのホストで `Inactive…` に差し替えているので、CI・Simulator では上のクラッシュを再現も確認もできない。判定は差し替えで Unit テストし、直ったかは TestFlight のクラッシュレポートで見る（2026-10-22）
 
 ## アイコン・画像のスクリプト
 

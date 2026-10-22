@@ -48,7 +48,8 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect`・`.glass`・`.glassProminent`・`GlassEffectContainer`）は分岐なしで使う
 - 外観はライト固定（元アプリの色・画像が白地の前提）。タブの選択色は `ThemeColorPink`（`tint`）
 - エントリポイントは `DemomoniApp`。フォントの登録・`ModelContainer`・`BeaconDetector`・`NearbyPieceAlerts`・`TabSelection` を作り、Environment で画面に渡す。
-  `init` で通知の delegate（`PieceNotificationResponder`）を設定し、`NearbyPieceAlerts.refresh()` で見張りを再開する（`CLMonitor` の出来事でバックグラウンドに起こされたときは画面が作られないことがあるため）。`scenePhase` が active / background になったときも `refresh()` する
+  `init` で通知の delegate（`PieceNotificationResponder`）を設定し、`NearbyPieceAlerts.refresh()` で見張りを再開する（`CLMonitor` の出来事でバックグラウンドに起こされたときは画面が作られないことがあるため）。`scenePhase` が active / background になったときも `refresh()` する。
+  `refresh()` が `CLMonitor` を開くのは、オンで許可がそろっている人だけ（片付けのためだけに開かない。#120）
 - `ContentView` の `TabView` に 4 つのタブを置く。表示しているタブは `TabSelection`（`@Observable`。値は `nonisolated` の `AppTab`）で持ち、初期選択はさがす。近くのピースの通知を開いたとき・デバッグモードの擬似検知で、外からさがすタブに切り替える
   - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）。答えの場所のピースを獲得したなぞなぞは、一覧に印を付け、詳細に答えを出す（`RiddleProgress`）
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
@@ -66,8 +67,12 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - 使用中の許可は `CLServiceSession(authorization: .whenInUse)`（`LocationSession` の protocol の後ろ）で求める。探していて、許可がまだ・許可済みの間だけ持ち、まだ尋ねていなければ作った時点で尋ねる（さがすタブを最初に表示したとき）
   - デバッグモードからは `injectDetection(pieceID:)` で「そのピースのビーコンを見つけた」を外から入れる（探していなければ次の `start()` まで持っておく）
 - `NearbyAlert/` … アプリを閉じていても近くのピースを知らせる（せっていタブのスイッチでオンにした人だけ。既定はオフ）
-  - `NearbyPieceAlertPreference`: オン・オフを `UserDefaults` のキー `nearbyPieceAlertsEnabled` 1 つで持つ。`-uiTesting`・Unit テストのホストでは端末の値を読まず、書かない
-  - `NearbyPieceAlerts`（`@Observable`）: `refresh()` で見張るかを決め直す（前の `refresh()` が終わってから次を行う）。オン・位置情報が「常に」・正確な位置情報・通知の許可がそろっている間だけ、`CLServiceSession(authorization: .always)` を持ち、`CLMonitor`（名前 `nearby-pieces`）に未獲得のピースのビーコンの条件を足す。そろっていなければ条件をすべて外して session を終える（一度オンにした人は、オフのまま起動したときも外す。オンにしたことの無い人には `CLMonitor` を作らない）。許可を尋ねるのは `preferenceDidChange()`（スイッチをオンにしたとき）だけ
+  - `NearbyPieceAlertPreference`: オン・オフを `UserDefaults` のキー `nearbyPieceAlertsEnabled`、「`CLMonitor` に条件が残っているかもしれない」（`mayHaveConditions`。条件をそろえたら立て、オフにした直後に外し終えたら下ろす）をキー `nearbyPieceAlertsMayHaveConditions` で持つ。`-uiTesting`・Unit テストのホストでは端末の値を読まず、書かない
+  - `NearbyPieceAlerts`（`@Observable`）: `refresh()` で見張るかを決め直す（前の `refresh()` が終わってから次を行う）。オン・位置情報が「常に」・正確な位置情報・通知の許可がそろっている間だけ、`CLServiceSession(authorization: .always)` を持ち、`CLMonitor`（名前 `nearby-pieces`）に未獲得のピースのビーコンの条件を足す。そろっていなければ session を終えるが、条件は外さず `CLMonitor` も開かない（オフの人・オンでも許可が足りない人。オフの間は通知を出さないので、残った条件は見えない）。
+    条件を外すのは `preferenceDidChange()` でオフにした直後だけで、`mayHaveConditions` が立っているときに限る（`refresh()` と同じ直列に並べ、オン → オフで入れ違わない）。許可を尋ねるのは `preferenceDidChange()`（スイッチをオンにしたとき）だけ
+  - TestFlight の `1.0 (4)`（iOS 27.0）で、起動時に片付けのために開いた `CLMonitor.init(_:)` の中の assertion で落ちた（#120。原因は確定していない）。そのため次の 3 つを守る:
+    片付けのためだけに開かない（上の `refresh()`）／`CLMonitor` はプロセスで 1 つだけ（`CoreLocationBeaconRegionMonitor.shared`。開く処理は `OpenOnce` で 1 回にまとめ、開いている途中の呼び出しは同じ `Task` を待つ）／
+    位置情報の許可が「常に」か「使用中」のときだけ開く（`NearbyPieceMonitoring.canOpenMonitor`。開けなければ `setConditions`・`removeAllConditions` は何もせず `false` を返し、記録は残す）
   - 見張る条件は `NearbyPieceMonitoring.conditions`: 未獲得のビーコンが 20 台（`CLMonitor` の上限）以下なら 1 台ずつ（identifier `beacon-<UUID>-<major>-<minor>`）、超えるときは UUID ごと（`beacon-uuid-<UUID>`。どのビーコンかは出来事の `refinement` で読む）。同梱は 32 台なので、獲得が 12 個に届くまでは UUID ごと
   - `.satisfied` の出来事で、未獲得のピース・アプリが前面（active）でないときだけローカル通知（identifier `piece-<id>`、`userInfo` の `pieceID`）を出す。獲得は保存しない（さがすタブで行う）
   - `CLMonitor`・`CLServiceSession(.always)`・「常に許可」は `BeaconRegionMonitor`（実機 `CoreLocationBeaconRegionMonitor`）、通知は `PieceNotifier`（実機 `UserNotificationPieceNotifier`）の protocol の後ろ。`-uiTesting`・Unit テストのホストでは何もしない `Inactive…` に差し替える（許可のダイアログを出さない）

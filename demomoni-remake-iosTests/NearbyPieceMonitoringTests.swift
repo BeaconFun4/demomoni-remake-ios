@@ -3,6 +3,7 @@
 //  demomoni-remake-iosTests
 //
 
+import CoreLocation
 @testable import demomoni_remake_ios
 import Foundation
 import Testing
@@ -139,10 +140,45 @@ struct NearbyPieceMonitoringTests {
     }
 }
 
+/// CLMonitor を開いてよいかの判定（#120）
+struct CanOpenMonitorTests {
+    /// 位置情報が「常に」か「使用中」のときだけ開く。未決定・拒否・制限・分からない値では開かない
+    @Test(arguments: [
+        (LocationAuthorization.always, true),
+        (.whenInUse, true),
+        (.notDetermined, false),
+        (.denied, false),
+        (.restricted, false),
+        (.unknown, false)
+    ])
+    func opensOnlyWhenAuthorized(authorization: LocationAuthorization, expected: Bool) {
+        #expect(NearbyPieceMonitoring.canOpenMonitor(authorization) == expected)
+    }
+
+    /// CoreLocation の許可の状態を写す。今の SDK に無い値は `unknown` にする
+    @Test(arguments: [
+        (CLAuthorizationStatus.notDetermined, LocationAuthorization.notDetermined),
+        (.restricted, .restricted),
+        (.denied, .denied),
+        (.authorizedAlways, .always),
+        (.authorizedWhenInUse, .whenInUse)
+    ])
+    func mapsAuthorizationStatus(status: CLAuthorizationStatus, expected: LocationAuthorization) {
+        #expect(LocationAuthorization(status) == expected)
+    }
+
+    @Test
+    func mapsUnknownAuthorizationStatus() throws {
+        let unknown = try #require(CLAuthorizationStatus(rawValue: 99))
+        #expect(LocationAuthorization(unknown) == .unknown)
+        #expect(!NearbyPieceMonitoring.canOpenMonitor(LocationAuthorization(unknown)))
+    }
+}
+
 /// スイッチの値の保存
 @MainActor
 struct NearbyPieceAlertPreferenceTests {
-    /// 既定はオフ。切り替えたら端末に保存し、次に読んだときも同じ値
+    /// 既定はオフ・条件なし。切り替えたら端末に保存し、次に読んだときも同じ値
     @Test
     func storesValue() throws {
         let suiteName = "NearbyPieceAlertPreferenceTests-\(UUID().uuidString)"
@@ -150,20 +186,28 @@ struct NearbyPieceAlertPreferenceTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preference = NearbyPieceAlertPreference(defaults: defaults)
         #expect(!preference.isEnabled)
-        #expect(!preference.hasStoredValue)
+        #expect(!preference.mayHaveConditions)
 
         preference.isEnabled = true
-        #expect(preference.hasStoredValue)
-        #expect(NearbyPieceAlertPreference(defaults: defaults).isEnabled)
+        preference.mayHaveConditions = true
+        let reloaded = NearbyPieceAlertPreference(defaults: defaults)
+        #expect(reloaded.isEnabled)
+        #expect(reloaded.mayHaveConditions)
+
+        preference.mayHaveConditions = false
+        #expect(!NearbyPieceAlertPreference(defaults: defaults).mayHaveConditions)
     }
 
-    /// 保存先が無ければ、メモリ上だけで持つ
+    /// 保存先が無ければ、メモリ上だけで持つ（端末の値を読まず、書かない）
     @Test
     func keepsValueInMemoryWithoutDefaults() {
         let preference = NearbyPieceAlertPreference(defaults: nil)
         preference.isEnabled = true
+        preference.mayHaveConditions = true
         #expect(preference.isEnabled)
-        #expect(!preference.hasStoredValue)
-        #expect(!NearbyPieceAlertPreference(defaults: nil).isEnabled)
+        #expect(preference.mayHaveConditions)
+        let other = NearbyPieceAlertPreference(defaults: nil)
+        #expect(!other.isEnabled)
+        #expect(!other.mayHaveConditions)
     }
 }
