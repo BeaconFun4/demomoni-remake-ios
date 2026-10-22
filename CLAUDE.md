@@ -27,6 +27,13 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - プロジェクトはフォルダ同期グループ（objectVersion 77）。ファイルの追加・削除・移動で `project.pbxproj` は変わらないので、pbxproj を手で直さない
 - 署名情報・Bundle ID・バージョン・Deployment Target は `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
   - Debug 構成だけ `Configs/Debug.xcconfig` で、Bundle ID を `jp.shilokuma.Demomoni-debug`、アイコンを `AppIcon-Debug`（下部に「debug」。`scripts/make-debug-app-icon.swift` で作る）、ホーム画面の名前を「でももに！β」に差し替える（デバッグモード入りの版を App Store 版と別のアプリとして配るため）。アイコンは pbxproj の `ASSETCATALOG_COMPILER_APPICON_NAME = $(APP_ICON_NAME)` で xcconfig から選ぶ
+- アプリのアイコンは 2 つ。どちらも元の絵（`docs/app-icon/demomoni-AppIcon.png`。1024 × 1024・不透明の平面のイラスト。ターゲットの外）から作る
+  - `AppIcon`（Release 構成・App Store 版）… Icon Composer の `demomoni-remake-ios/AppIcon.icon`（Liquid Glass）。`icon.json` は背景の塗り（元の絵の水色 `#ACE2F2`・不透明。App Store Connect は透明な画素を受け付けない）と、手前から `character`（キャラクター・カード）・`piece`（パズルのピース）の 2 グループ（影は neutral 0.5・透け方は無効）。外観ごとの指定（Dark・Clear・Tinted）は書かず、システムが Default から作るのに任せる。iOS・macOS 共通の形（`"squares" : "shared"`）
+  - 層の画像（`AppIcon.icon/Assets/` の `character.png`・`piece.png`）は `scripts/make-app-icon-layers.swift` が元の絵を色と線で切り分けて書き出す（キャラクターに隠れたピースは赤で描き足す。重ね直して元の絵とほぼ同じになることを確かめてから書く）。`icon.json` は書き換えないので、重なり順・ガラスの効果は `icon.json` を手で直すか Icon Composer で開いて直す
+  - `AppIcon-Debug`（Debug 構成）… `scripts/make-debug-app-icon.swift` が元の絵の下部に「debug」の帯を描いた平面の PNG（`Assets.xcassets/AppIcon-Debug.appiconset`）
+  - 同じ名前のアイコン（`AppIcon.icon` と `AppIcon.appiconset`）をターゲットに同時に置かない。`.icon` を直したら `ictool`（`/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool`）で書き出して確かめる（出力はリポジトリの外に。コミットしない）:
+    `ictool demomoni-remake-ios/AppIcon.icon --export-image --output-file /tmp/icon-Default.png --platform iOS --rendition Default --width 1024 --height 1024 --scale 1`（`--rendition` は `Dark`・`ClearLight`・`TintedLight` なども）
+  - 共有スキーム `demomoni-remake-ios` の Run・Test は Debug 構成（`AppIcon-Debug`）なので、`AppIcon.icon` の見た目は `-configuration Release` でビルドして確かめる
 - 共有スキームは 2 つ。`demomoni-remake-ios`（Run・Test は Debug、Archive は Release = App Store 版。CI の `_build.yml` と `_archive.yml` の既定はプロジェクト名と同じこのスキームなので名前を変えない）と、`demomoni-remake-ios-debug`（Run・Archive とも Debug = デバッグモード入りの `jp.shilokuma.Demomoni-debug`。テストは持たない）。CI の Archive の構成はスキームではなく `_archive.yml` の `configuration` の入力（`-configuration`）で決まる
 - Swift 6 言語モード・Strict Concurrency（complete）。既定の分離は MainActor（UI テストのターゲットだけ nonisolated）
 - SwiftLint は Build Tool Plugin（SwiftLintPlugins）で全ターゲットに効く。ルールは `.swiftlint.yml`。
