@@ -11,6 +11,10 @@
 - `-only-testing` で一部の UI テストだけを流す前に、Simulator を `simctl shutdown` → `boot` する。直前のフル検証の `LaunchTests` が横向きのまま残すと、せっていタブの「デバッグモード」の行が画面の外に出て `DebugModeUITests` が落ちる（2026-10-22）
 - せっていタブの `List` の行の `Toggle` は、行ではなく中のスイッチ（`app.switches["ラベル"].switches.firstMatch`）を押す（2026-10-22）
 
+## Unit テスト
+
+- 既定の分離が MainActor なので、Swift Testing の `@Test(arguments:)` に渡す型の static プロパティは `nonisolated static let` にする（付けないと、マクロの展開の中から読めずに「main actor-isolated static property cannot be accessed」でテストのビルドが落ちる）（2026-11-02）
+
 ## SwiftUI
 
 - せっていタブで行の下に案内を出すと、スイッチの行のカードの下の角が四角くなって切れて見える。案内は Section の footer に置く（2026-10-22）
