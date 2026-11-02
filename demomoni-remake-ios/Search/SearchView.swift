@@ -118,11 +118,15 @@ struct SearchView: View {
         gotPiece = GotPiece(piece: piece, collectedAt: now)
     }
 
-    /// 道の上を歩くうさぎ。元アプリと同じく、うさぎを道の上のほうに重ねる
+    /// 道の上を歩くうさぎ。元アプリと同じく、うさぎを道の上のほうに重ねる。
+    /// 道の両側には、うさぎの後ろへ遠ざかる街路樹を重ねる（道 → 木 → うさぎの順）
     private var walkingRabbit: some View {
         Image(.road)
             .resizable()
             .scaledToFit()
+            .overlay {
+                StreetTreesView()
+            }
             .overlay {
                 AnimatedGIFView(assetName: "tekuusa")
                     .padding(.horizontal, 32)
