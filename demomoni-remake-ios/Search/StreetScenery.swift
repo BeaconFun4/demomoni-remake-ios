@@ -12,15 +12,15 @@ import Foundation
 /// うさぎは正面（こちら）を向いて歩くので、木は道の手前（画面の下・大きい）から奥（消失点・小さい）へ遠ざかり、
 /// 奥で消えたら手前に戻って繰り返す。木は道に沿った距離で等間隔に並べ、等速で動かす。
 /// 画面上の位置と大きさは遠近法で決める（距離 `z` のものは、手前の端からの見かけの大きさが `nearDistance / z` 倍になる）
-nonisolated struct StreetScenery {
+nonisolated enum StreetScenery {
     /// 道のどちら側か
-    enum Side: CaseIterable {
+    enum Side: CaseIterable, Sendable {
         case left
         case right
     }
 
     /// 1 本の木
-    struct Tree: Equatable {
+    struct Tree: Equatable, Identifiable, Sendable {
         /// 道のどちら側か
         let side: Side
         /// その側の何本目か（並びの中で変わらない番号。View の識別に使う）
@@ -33,6 +33,11 @@ nonisolated struct StreetScenery {
         let height: Double
         /// 不透明度（手前の端で現れ、奥の端の手前で消える）
         let opacity: Double
+
+        /// 並びの中で変わらない識別子
+        var id: String {
+            "\(side)-\(index)"
+        }
     }
 
     // MARK: - 道の画像の寸法（way.png を測った値）
@@ -78,8 +83,8 @@ nonisolated struct StreetScenery {
     }
 
     /// 経過時間 `elapsed` 秒のときの木の並び。奥の木から順に並べる（この順に描けば手前の木が上に重なる）。
-    /// Reduce Motion のときは時刻を固定して呼ぶ（止まった並び）
-    static func trees(at elapsed: TimeInterval) -> [Tree] {
+    /// Reduce Motion のときは時刻を固定して呼ぶ（止まった並び）。`direction` は向き（既定は `StreetScenery.direction`）
+    static func trees(at elapsed: TimeInterval, direction: Double = StreetScenery.direction) -> [Tree] {
         let travelled = direction * elapsed * speed / depthLength
         let trees = Side.allCases.flatMap { side in
             (0..<treesPerSide).map { index in
@@ -137,7 +142,9 @@ nonisolated struct StreetScenery {
     }
 
     /// 小数部分（0 以上 1 未満）。負の数も 0〜1 に収める
-    private static func fraction(_ value: Double) -> Double {
-        value - value.rounded(.down)
+    static func fraction(_ value: Double) -> Double {
+        let fraction = value - value.rounded(.down)
+        // ごく小さい負の数は、丸めで 1 になる
+        return fraction < 1 ? fraction : 0
     }
 }
