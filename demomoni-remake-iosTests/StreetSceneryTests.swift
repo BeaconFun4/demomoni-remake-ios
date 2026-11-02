@@ -9,8 +9,8 @@ import Testing
 
 struct StreetSceneryTests {
     /// 並びを side と index で引けるようにする
-    private func treesByID(at elapsed: TimeInterval) -> [String: StreetScenery.Tree] {
-        Dictionary(uniqueKeysWithValues: StreetScenery.trees(at: elapsed).map { ("\($0.side)-\($0.index)", $0) })
+    private func treesByID(at elapsed: TimeInterval, direction: Double = StreetScenery.direction) -> [String: StreetScenery.Tree] {
+        Dictionary(uniqueKeysWithValues: StreetScenery.trees(at: elapsed, direction: direction).map { ($0.id, $0) })
     }
 
     /// 左右に決めた本数ずつ並ぶ
@@ -46,27 +46,65 @@ struct StreetSceneryTests {
     }
 
     /// 周期の境目でも、見えている木の位置は少しずつしか動かない。
-    /// 手前の端へ戻る木は、奥の端でも手前の端でも見えていない
-    @Test
-    func wrapsSeamlessly() throws {
+    /// 端から端へ戻る木は、戻る前も後もほとんど見えていない。どちらの向きでも同じ
+    @Test(arguments: [1.0, -1.0])
+    func wrapsSeamlessly(direction: Double) throws {
         let step = 1.0 / 30
+        // 1 フレームで進む奥行きの進み具合と、それに合わせたしきい値（定数を調整してもテストを直さずに済むようにする）
+        let progressStep = step * StreetScenery.speed / StreetScenery.depthLength
+        let opacityStep = progressStep / min(StreetScenery.fadeInLength, StreetScenery.fadeOutLength) + 1e-9
+        let maxYStep = (StreetScenery.roadBottomY - StreetScenery.vanishingPoint.y)
+            * StreetScenery.depthLength / StreetScenery.nearDistance * progressStep + 1e-9
         var time = 0.0
         while time < StreetScenery.period {
-            let current = treesByID(at: time)
-            let next = treesByID(at: time + step)
+            let current = treesByID(at: time, direction: direction)
+            let next = treesByID(at: time + step, direction: direction)
             for (id, tree) in current {
                 let other = try #require(next[id])
-                if other.progress < tree.progress {
-                    // 手前の端へ戻った
-                    #expect(tree.opacity < 0.05)
-                    #expect(other.opacity < 0.05)
+                if abs(other.progress - tree.progress) > 0.5 {
+                    // 端から端へ戻った
+                    #expect(tree.opacity <= opacityStep)
+                    #expect(other.opacity <= opacityStep)
                 } else {
-                    #expect(abs(other.opacity - tree.opacity) < 0.2)
-                    #expect(abs(other.position.y - tree.position.y) < 0.02)
+                    #expect(abs(other.opacity - tree.opacity) <= opacityStep)
+                    #expect(abs(other.position.y - tree.position.y) <= maxYStep)
                 }
             }
             time += step
         }
+    }
+
+    /// 同時に見える本数は、周期の中で変わらない
+    @Test
+    func visibleTreeCountStaysConstant() {
+        let step = 1.0 / 30
+        var counts: Set<Int> = []
+        var time = step / 2
+        while time < StreetScenery.period {
+            counts.insert(StreetScenery.trees(at: time).count { $0.opacity > 0 })
+            time += step
+        }
+        #expect(counts == [StreetScenery.treesPerSide * 2])
+    }
+
+    /// 向きを反転すると、奥から手前へ近づく
+    @Test
+    func reversedDirectionMovesTowardViewer() throws {
+        let start = treesByID(at: 0.5, direction: -1)
+        let later = treesByID(at: 0.6, direction: -1)
+        for (id, tree) in start where tree.progress > 0.1 {
+            let other = try #require(later[id])
+            #expect(other.progress < tree.progress)
+            #expect(other.position.y > tree.position.y)
+        }
+    }
+
+    /// 小数部分は 0 以上 1 未満に収まる（ごく小さい負の数も）
+    @Test(arguments: [0.0, 0.25, 1.0, 2.75, -0.25, -1e-20, -3.0])
+    func fractionStaysInUnitRange(value: Double) {
+        let fraction = StreetScenery.fraction(value)
+        #expect(fraction >= 0)
+        #expect(fraction < 1)
     }
 
     /// 奥へ行くほど小さく、消失点へ近づく

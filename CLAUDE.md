@@ -53,6 +53,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - `ContentView` の `TabView` に 4 つのタブを置く。表示しているタブは `TabSelection`（`@Observable`。値は `nonisolated` の `AppTab`）で持ち、初期選択はさがす。近くのピースの通知を開いたとき・デバッグモードの擬似検知で、外からさがすタブに切り替える
   - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）。答えの場所のピースを獲得したなぞなぞは、一覧に印を付け、詳細に答えを出す（`RiddleProgress`）
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
+    - 歩くうさぎ（`SearchView.walkingRabbit`）は、道の画像（`road` = `way.png`）→ 街路樹（`StreetTreesView`。SF Symbols の `tree.fill`）→ うさぎの GIF（`tekuusa`）の順に重ねる。木は道の両側を手前から奥へ遠ざかり、奥で消えたら手前から出てくる。並び（位置・大きさ・不透明度）は `StreetScenery`（道の画像に対する割合の座標。速さ・本数・間隔・大きさ・向きはその定数）で計算する。Reduce Motion では止まった並びを出し、VoiceOver には読ませない（ラベルは「道を歩くうさぎ」のまま）
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
   - `Settings/` … せってい（「おしらせ」の「アプリを閉じていても、近くのピースを知らせる」スイッチ・アプリのバージョン・ニコモジ+ のライセンスの本文）。足りない許可の案内（`NearbyAlertPermissionStatus.message`）は Section の footer に出す。App Store 版でも空にならない項目を置く（デバッグ用の項目は `#if DEBUG` の中に置く）。Debug 構成だけ `Settings/DebugMode/` のデバッグモード（ピースを 1 つずつ埋める・外す・全部埋める・全部リセット・ピースを選んで擬似検知）への入口がある。擬似検知は `BeaconDetector.injectDetection(pieceID:)` で入れてから、`EnvironmentValues.showSearchTab`（`TabSelection` を切り替える）でさがすタブに切り替える（さがすタブが探し始めたときに届き、保存して「ゲットした」画面を出す）
 - 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
