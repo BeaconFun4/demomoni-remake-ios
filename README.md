@@ -101,11 +101,11 @@ Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml
 | `develop` / `release/**` への push | ✅（UI テストも） | | ✅ |
 | その他の作業ブランチへの push | ✅（Unit テストのみ） | | |
 | Pull Request の作成時（opened / reopened / ready_for_review） | ✅（UI テストも） | | |
-| `epic/**` 宛ての Pull Request（ralph-loop の子 PR） | （push の Unit テストで確かめる） | | |
-| `epic/**` から `develop` などへの Pull Request（ralph-loop の最終 PR） | ✅（更新のたびに UI テストも） | | |
+| `askhub/**` 宛ての Pull Request（AskHub の子 PR） | （push の Unit テストで確かめる） | | |
+| `askhub/**` から `develop` などへの Pull Request（AskHub の最終 PR） | ✅（更新のたびに UI テストも） | | |
 | Fork からの Pull Request | ✅（UI テストも） | | |
 
-- ドキュメントだけの変更（`**/*.md`、`docs/**`）では Build を実行しません（Archive / Upload は実行します）
+- Build はドキュメントだけの変更でも実行します。ルールセットで `build / build` を必須にしているため、飛ばすとチェックが出ず、PR をマージできなくなります
 - Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) と [.github/workflows/_archive.yml](.github/workflows/_archive.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
 - 確かめるのは iOS の Simulator だけです
 
