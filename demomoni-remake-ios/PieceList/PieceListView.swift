@@ -12,12 +12,25 @@ import SwiftUI
 struct PieceListView: View {
     @Environment(\.catalog) private var catalog
     @Query private var collected: [CollectedPiece]
+    #if DEBUG
+    @Environment(\.modelContext) private var modelContext
+    /// 空きマスを埋められなかったときに出す文言
+    @State private var errorMessage: String?
+    #endif
 
     /// 獲得したピース（同梱データの順）
     private var collectedPieces: [Piece] {
         let ids = Set(collected.map(\.pieceID))
         return catalog.pieces.filter { ids.contains($0.id) }
     }
+
+    #if DEBUG
+    /// 獲得していないピース（同梱データの順）
+    private var uncollectedPieces: [Piece] {
+        let ids = Set(collected.map(\.pieceID))
+        return catalog.pieces.filter { !ids.contains($0.id) }
+    }
+    #endif
 
     /// 獲得したピースのサイン
     private var signatures: [Int: Data] {
@@ -40,7 +53,16 @@ struct PieceListView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
                     .accessibilityLabel(pieceCount.accessibilityLabel)
+                #if DEBUG
+                PieceBoard(
+                    pieces: collectedPieces,
+                    signatures: signatures,
+                    emptyPieces: uncollectedPieces,
+                    fill: fill
+                )
+                #else
                 PieceBoard(pieces: collectedPieces, signatures: signatures)
+                #endif
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,12 +72,33 @@ struct PieceListView: View {
             .navigationDestination(for: Piece.self) { piece in
                 PieceDetailView(piece: piece)
             }
+            #if DEBUG
+            .alert("保存できませんでした", isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
+            }
+            #endif
         }
         .tabItem {
             Image(systemName: "puzzlepiece.extension")
             Text("いちらん")
         }
     }
+
+    #if DEBUG
+    /// 空きマスのピースを、確かめずにすぐ獲得済みにする（日時は押した時刻）。盤には `@Query` で出る
+    private func fill(_ piece: Piece) {
+        do {
+            try PieceCollection(context: modelContext).collect(pieceID: piece.id, at: .now)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    #endif
 }
 
 #Preview {
