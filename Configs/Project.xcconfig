@@ -3,7 +3,7 @@
 //  demomoni-remake-ios
 //
 //  プロジェクト共通のビルド設定（template-app-ios と同じ構成）。
-//  署名情報・Bundle Identifier・バージョン・Deployment Target は pbxproj 側に直接書かず、ここだけを編集する。
+//  署名情報・Bundle Identifier・バージョン・Deployment Target・画面の向きは pbxproj 側に直接書かず、ここだけを編集する。
 //
 
 // Apple Developer Program の Team ID
@@ -27,6 +27,10 @@ IPHONEOS_DEPLOYMENT_TARGET = 26.0
 
 // ホーム画面に出すアプリ名（元アプリの CFBundleName と同じ）
 INFOPLIST_KEY_CFBundleDisplayName = でももに！
+
+// 画面の向き。iPhone は縦だけ（横にしても回さない）、iPad は 4 つの向きすべてを許す
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait
+INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 
 // 位置情報（使用中の許可）の利用目的。さがすタブで近くの iBeacon を見つけるために使う
 INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = 近くのビーコンを見つけて、ピースをゲットするために使います

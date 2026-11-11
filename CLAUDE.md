@@ -25,7 +25,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - 構成は [template-app-ios](https://github.com/shilokuma-inc/template-app-ios) と同じ。ターゲット名（`demomoni-remake-ios`）だけは元のまま残している
   （Swift のモジュール名は `demomoni_remake_ios`。テストでは `@testable import demomoni_remake_ios`）
 - プロジェクトはフォルダ同期グループ（objectVersion 77）。ファイルの追加・削除・移動で `project.pbxproj` は変わらないので、pbxproj を手で直さない
-- 署名情報・Bundle ID・バージョン・Deployment Target は `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
+- 署名情報・Bundle ID・バージョン・Deployment Target・画面の向きは `Configs/Project.xcconfig` に集約している。pbxproj に直接書かない
   - Debug 構成だけ `Configs/Debug.xcconfig` で、Bundle ID を `jp.shilokuma.Demomoni-debug`、アイコンを `AppIcon-Debug`（下部に「debug」。`scripts/make-debug-app-icon.swift` で作る）、ホーム画面の名前を「でももに！β」に差し替える（デバッグモード入りの版を App Store 版と別のアプリとして配るため）。アイコンは pbxproj の `ASSETCATALOG_COMPILER_APPICON_NAME = $(APP_ICON_NAME)` で xcconfig から選ぶ
 - アプリのアイコンは 2 つ。どちらも元の絵（`docs/app-icon/demomoni-AppIcon.png`。1024 × 1024・不透明の平面のイラスト。ターゲットの外）から作る
   - `AppIcon`（Release 構成・App Store 版）… Icon Composer の `demomoni-remake-ios/AppIcon.icon`（Liquid Glass）。`icon.json` は背景の塗り（元の絵の水色 `#ACE2F2`・不透明。App Store Connect は透明な画素を受け付けない）と、手前から `character`（キャラクター・カード）・`piece`（パズルのピース）の 2 グループ（影は neutral 0.5・透け方は無効）。外観ごとの指定（Dark・Clear・Tinted）は書かず、システムが Default から作るのに任せる。iOS・macOS 共通の形（`"squares" : "shared"`）
@@ -47,6 +47,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 
 - SwiftUI。iOS 26.0+（iPhone / iPad）。Liquid Glass の API（`glassEffect`・`.glass`・`.glassProminent`・`GlassEffectContainer`）は分岐なしで使う
 - 外観はライト固定（元アプリの色・画像が白地の前提）。タブの選択色は `ThemeColorPink`（`tint`）
+- 画面の向きは iPhone は縦だけ・iPad は全部の向き（`Configs/Project.xcconfig` の `INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone` / `_iPad`。pbxproj に書くと xcconfig より優先されるので書かない）
 - エントリポイントは `DemomoniApp`。フォントの登録・`ModelContainer`・`BeaconDetector`・`NearbyPieceAlerts`・`TabSelection` を作り、Environment で画面に渡す。
   `init` で通知の delegate（`PieceNotificationResponder`）を設定し、`NearbyPieceAlerts.refresh()` で見張りを再開する（`CLMonitor` の出来事でバックグラウンドに起こされたときは画面が作られないことがあるため）。`scenePhase` が active / background になったときも `refresh()` する。
   `refresh()` が `CLMonitor` を開くのは、オンで許可がそろっている人だけ（片付けのためだけに開かない。#120）
