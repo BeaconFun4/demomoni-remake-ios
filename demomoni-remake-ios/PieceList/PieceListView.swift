@@ -26,17 +26,30 @@ struct PieceListView: View {
         })
     }
 
+    /// 盤の上に出す数（ゲットした数 / 同梱の全部の数）
+    private var pieceCount: PieceCount {
+        PieceCount(pieces: catalog.pieces, collectedPieceIDs: collected.map(\.pieceID))
+    }
+
     var body: some View {
         NavigationStack {
-            PieceBoard(pieces: collectedPieces, signatures: signatures)
-                .padding()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.themeColorBlue)
-                .navigationTitle("いちらん")
-                .navigationBarTitleDisplayMode(.inline)
-                .navigationDestination(for: Piece.self) { piece in
-                    PieceDetailView(piece: piece)
-                }
+            VStack(spacing: 12) {
+                Text(pieceCount.text)
+                    .font(.demomoni(size: 26, relativeTo: .title2))
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .accessibilityLabel(pieceCount.accessibilityLabel)
+                PieceBoard(pieces: collectedPieces, signatures: signatures)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.themeColorBlue)
+            .navigationTitle("いちらん")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(for: Piece.self) { piece in
+                PieceDetailView(piece: piece)
+            }
         }
         .tabItem {
             Image(systemName: "puzzlepiece.extension")

@@ -55,6 +55,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ iBeacon を探し、未獲得のピースを見つけたら保存して「ピースをゲットしたよ！！」を出す
     - 歩くうさぎ（`SearchView.walkingRabbit`）の景色は SF Symbols。重なり順は 空の雲（`cloud.fill`）→ 遠くの建物（`building.2.fill`）→ 道の画像（`road` = `way.png`）→ 街路樹（`tree.fill`）→ うさぎの GIF（`tekuusa`）。雲と建物は道の画像の `background`、木は `overlay` に `StreetSceneryView` で置く。景色はうさぎの後ろへ（手前から奥へ）遠ざかり、奥で消えたら手前から出てくる。並び（位置・大きさ・不透明度）は `StreetScenery`（道の画像に対する割合の座標）が層（`Layer`。`trees`・`buildings`・`clouds`）ごとに遠近法で計算し、遠くの層ほど遠くに置いてゆっくり動かす（視差）。速さ・数・間隔・大きさ・向きは `StreetScenery` の定数、色は `StreetSceneryView` の定数。Reduce Motion では止まった並びを出し、VoiceOver には読ませない（ラベルは「道を歩くうさぎ」のまま）
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
+    - 盤のすぐ上に、ゲットした数と同梱の全ピースの数を言葉を付けずに「3 / 32」の形で出す（`PieceCount`。同梱に無い id・重なった id は数えない。読み上げは「ゲットしたピース 3 こ、全部で 32 こ」）
   - `Settings/` … せってい（「おしらせ」の「アプリを閉じていても、近くのピースを知らせる」スイッチ・アプリのバージョン・ニコモジ+ のライセンスの本文）。足りない許可の案内（`NearbyAlertPermissionStatus.message`）は Section の footer に出す。App Store 版でも空にならない項目を置く（デバッグ用の項目は `#if DEBUG` の中に置く）。Debug 構成だけ `Settings/DebugMode/` のデバッグモード（ピースを 1 つずつ埋める・外す・全部埋める・全部リセット・ピースを選んで擬似検知）への入口がある。擬似検知は `BeaconDetector.injectDetection(pieceID:)` で入れてから、`EnvironmentValues.showSearchTab`（`TabSelection` を切り替える）でさがすタブに切り替える（さがすタブが探し始めたときに届き、保存して「ゲットした」画面を出す）
 - 画面は機能ごとのディレクトリに分け、判定・計算は View から切り出した値の型・純粋な関数にして Swift Testing でテストする
 
