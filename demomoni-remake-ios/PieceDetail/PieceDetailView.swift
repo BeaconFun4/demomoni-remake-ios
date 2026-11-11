@@ -20,6 +20,14 @@ struct PieceDetailView: View {
     }
 
     @State private var showsSignature = false
+    #if DEBUG
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    /// 「日時を変える」のシートを出しているか
+    @State private var editsCollectedAt = false
+    /// 編集を保存できなかったときに出す文言
+    @State private var errorMessage: String?
+    #endif
 
     private var record: CollectedPiece? {
         records.first
@@ -67,7 +75,71 @@ struct PieceDetailView: View {
         .fullScreenCover(isPresented: $showsSignature) {
             SignatureView(piece: piece, signature: record?.signature)
         }
+        #if DEBUG
+        .toolbar {
+            // 獲得済みのときだけ編集できる
+            if let record {
+                ToolbarItem(placement: .primaryAction) {
+                    editMenu(record: record)
+                }
+            }
+        }
+        .sheet(isPresented: $editsCollectedAt) {
+            if let record {
+                CollectedAtEditView(collectedAt: record.collectedAt) { date in
+                    try PieceCollection(context: modelContext).updateCollectedAt(date, pieceID: piece.id)
+                }
+            }
+        }
+        .alert("保存できませんでした", isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        #endif
     }
+
+    #if DEBUG
+    /// Debug 版だけの編集の操作（日時を変える・サインを消す・外す）
+    private func editMenu(record: CollectedPiece) -> some View {
+        Menu {
+            Button("日時を変える", systemImage: "calendar") {
+                editsCollectedAt = true
+            }
+            Button("サインを消す", systemImage: "signature") {
+                write { try $0.saveSignature(nil, pieceID: piece.id) }
+            }
+            .disabled(record.signature == nil)
+            Button("外す", systemImage: "trash", role: .destructive) {
+                // 外したら盤へ戻る（盤には `@Query` で空きマスとして出る）
+                if write({ try $0.remove(pieceID: piece.id) }) {
+                    dismiss()
+                }
+            }
+        } label: {
+            Label("編集", systemImage: "pencil")
+        }
+        .accessibilityLabel("編集")
+    }
+
+    /// 獲得の記録を書き換える。保存できなければ「保存できませんでした」を出す
+    /// - Returns: 書き換えられたか
+    @discardableResult
+    private func write(_ change: (PieceCollection) throws -> Bool) -> Bool {
+        do {
+            if try change(PieceCollection(context: modelContext)) {
+                return true
+            }
+            errorMessage = "このピースはまだゲットしていません"
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        return false
+    }
+    #endif
 }
 
 /// ピースの画像に、保存したサインを重ねたもの
