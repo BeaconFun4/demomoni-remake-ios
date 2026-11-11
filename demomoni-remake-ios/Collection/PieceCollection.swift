@@ -68,6 +68,18 @@ struct PieceCollection {
         return true
     }
 
+    /// 獲得済みのピースの、最初に獲得した日時を置き換える（サインは残す）
+    /// - Returns: 保存できたか。獲得していないピースには何もしない（記録も作らない）
+    @discardableResult
+    func updateCollectedAt(_ date: Date, pieceID: Int) throws -> Bool {
+        guard let record = try record(pieceID: pieceID) else {
+            return false
+        }
+        record.collectedAt = date
+        try saveOrRollback()
+        return true
+    }
+
     /// ピースの獲得の記録（最初に獲得した日時・サイン）を消し、獲得していない状態に戻す
     /// - Returns: 消したか。獲得していなければ何もしない
     @discardableResult

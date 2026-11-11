@@ -86,6 +86,50 @@ struct PieceCollectionTests {
         #expect(try !collection.isCollected(pieceID: 0))
     }
 
+    /// 獲得済みのピースの日時を変えられる。サインは残る
+    @Test
+    func updateCollectedAtReplacesDate() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.saveSignature(Data([1]), pieceID: 0)
+
+        #expect(try collection.updateCollectedAt(laterDate, pieceID: 0))
+        let record = try #require(try collection.record(pieceID: 0))
+        #expect(record.collectedAt == laterDate)
+        #expect(record.signature == Data([1]))
+    }
+
+    /// 獲得していないピースの日時は変えない（記録も作らない）
+    @Test
+    func updateCollectedAtIgnoresUncollectedPiece() throws {
+        #expect(try !collection.updateCollectedAt(laterDate, pieceID: 0))
+        #expect(try !collection.isCollected(pieceID: 0))
+        #expect(try container.mainContext.fetch(FetchDescriptor<CollectedPiece>()).isEmpty)
+    }
+
+    /// 日時を変えても、ほかのピースの日時・サインは変わらない
+    @Test
+    func updateCollectedAtLeavesOtherPieces() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.collect(pieceID: 1, at: firstDate)
+        try collection.saveSignature(Data([2]), pieceID: 1)
+
+        try collection.updateCollectedAt(laterDate, pieceID: 0)
+        let other = try #require(try collection.record(pieceID: 1))
+        #expect(other.collectedAt == firstDate)
+        #expect(other.signature == Data([2]))
+        #expect(try collection.collectedPieceIDs() == [0, 1])
+    }
+
+    /// 変えた日時は、同じストアの別の `ModelContext` からも読める
+    @Test
+    func updatedCollectedAtIsVisibleFromAnotherContext() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.updateCollectedAt(laterDate, pieceID: 0)
+
+        let other = PieceCollection(context: ModelContext(container))
+        #expect(try other.record(pieceID: 0)?.collectedAt == laterDate)
+    }
+
     /// まとめて獲得すると、まだ獲得していないピースだけを足し、獲得済みのピースの日時・サインは残す
     @Test
     func collectAllAddsOnlyMissingPieces() throws {
