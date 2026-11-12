@@ -58,4 +58,30 @@ final class PieceListUITests: XCTestCase {
         app.tabButton("いちらん").tap()
         XCTAssertTrue(app.staticTexts["ゲットしたピース 0 こ、全部で 32 こ"].waitForExistence(timeout: 10))
     }
+
+    /// Debug 構成だけ、空きマスを押すと確かめずにすぐ埋まり、数が増えてピースを押せるようになる。
+    /// UI テストは Debug 構成のアプリで動くので、空きマスを押せる
+    @MainActor
+    func testTapEmptyCellFillsPiece() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
+        app.launch()
+
+        app.tabButton("いちらん").tap()
+        let emptyCell = app.buttons["ピース No.1 函館山 を埋める"]
+        XCTAssertTrue(emptyCell.waitForExistence(timeout: 10), "空きマス No.1 のボタン")
+        XCTAssertTrue(app.staticTexts["ゲットしたピース 0 こ、全部で 32 こ"].waitForExistence(timeout: 5), "埋める前の数")
+        emptyCell.tap()
+
+        let piece = app.buttons["ピース No.1 函館山"]
+        XCTAssertTrue(piece.waitForExistence(timeout: 10), "埋めたピースのボタン")
+        XCTAssertTrue(app.staticTexts["ゲットしたピース 1 こ、全部で 32 こ"].waitForExistence(timeout: 5), "埋めた後の数")
+        XCTAssertFalse(emptyCell.exists)
+        // ほかの空きマスは埋まらない
+        XCTAssertTrue(app.buttons["ピース No.14 元町公園 を埋める"].exists, "空きマス No.14 のボタン")
+
+        // 埋めたピースを押すとピース詳細が開く
+        piece.tap()
+        XCTAssertTrue(app.staticTexts["ピース No.1"].waitForExistence(timeout: 10), "ピース詳細")
+    }
 }
