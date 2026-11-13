@@ -13,6 +13,11 @@
 
 - 署名情報・Bundle ID・バージョン・Deployment Target は [Configs/Project.xcconfig](Configs/Project.xcconfig) に集約しています（pbxproj には直接書かない）
 - Debug 構成は [Configs/Debug.xcconfig](Configs/Debug.xcconfig) で、Bundle ID `jp.shilokuma.Demomoni-debug`・下部に「debug」と書いたアイコン（`AppIcon-Debug`）・ホーム画面の名前「でももに！β」にしています。デバッグモード入りの版を、App Store 版（Release 構成の `jp.shilokuma.Demomoni`）と別のアプリとして配るためです
+  - 次の動きは Debug 構成（でももに！β）だけのデモ用の動きで、App Store 版（でももに！・`jp.shilokuma.Demomoni`）では出ません（コードは `#if DEBUG` の中）
+    - いちらんの盤の空きマスを押すと、確かめる画面を出さずに、そのマスのピースをすぐ埋める（`PieceBoard`）
+    - ピース詳細の編集（外す・サインを消す・日時を変える）
+    - せっていタブのデバッグモード（下の「アプリの構成」）
+  - これらを確かめるときは、TestFlight の「でももに！β」（アイコンの下部に「debug」）を入れて使います。TestFlight の「でももに！」（App Store 版）では空きマスを押しても埋まりません
 - App Store 版のアイコン（`AppIcon`）は Icon Composer の [AppIcon.icon](demomoni-remake-ios/AppIcon.icon)（Liquid Glass）です。元の絵（[docs/app-icon/demomoni-AppIcon.png](docs/app-icon/demomoni-AppIcon.png)）から `swift scripts/make-app-icon-layers.swift` で層（キャラクター・パズルのピース）を切り出し、背景の水色は `icon.json` の塗りで表しています。Debug 用のアイコン（`AppIcon-Debug`）は同じ元の絵から `swift scripts/make-debug-app-icon.swift` で作る平面の画像です
 - スキームは 2 つあります。`demomoni-remake-ios` は App Store 版（Archive は Release）、`demomoni-remake-ios-debug` はデバッグモード入りの版（Run・Archive とも Debug）です
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
