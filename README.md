@@ -102,13 +102,14 @@ Archive / Upload（[.github/workflows/archive.yml](.github/workflows/archive.yml
 
 | きっかけ | Build（ビルド + テスト + SwiftLint） | Archive（IPA Export） | Upload（App Store Connect） |
 |---|:-:|:-:|:-:|
-| `main` への push | ✅（UI テストも） | ✅ | |
+| `main` への push | ✅（UI テストも） | | |
 | `develop` / `release/**` への push | ✅（UI テストも） | | ✅ |
 | その他の作業ブランチへの push | ✅（Unit テストのみ） | | |
 | Pull Request の作成時（opened / reopened / ready_for_review） | ✅（UI テストも） | | |
 | `askhub/**` 宛ての Pull Request（AskHub の子 PR） | （push の Unit テストで確かめる） | | |
 | `askhub/**` から `develop` などへの Pull Request（AskHub の最終 PR） | ✅（更新のたびに UI テストも） | | |
 | Fork からの Pull Request | ✅（UI テストも） | | |
+| 手動実行（Actions タブの Run workflow） | | ✅ | ✅ |
 
 - Build はドキュメントだけの変更でも実行します。ルールセットで `build / build` を必須にしているため、飛ばすとチェックが出ず、PR をマージできなくなります
 - Xcode のバージョンは [.github/workflows/_build.yml](.github/workflows/_build.yml) と [.github/workflows/_archive.yml](.github/workflows/_archive.yml) の `xcode-version` で固定しています。開発環境を更新するときは合わせて変えます
@@ -124,7 +125,8 @@ template-app-ios と同じ構成で、App Store Connect の API Key で認証し
   - `upload-debug`: デバッグモード入りの版（スキーム `demomoni-remake-ios-debug` を Debug 構成で Archive した `jp.shilokuma.Demomoni-debug`。アイコンの下部に「debug」、ホーム画面の名前は「でももに！β」）
 - デバッグモード入りの版を配るには、担当者が App Store Connect に `jp.shilokuma.Demomoni-debug` のアプリを作ります（名前の候補は「でももに！β」。App Store 全体で使用済みなら別の名前にします）。アプリが無いうちは `upload-debug` がアップロードの前に止まり、入力する値を Job Summary に出します。作った後は再実行します
 - ビルド番号は、アップロードのときに App Store Connect の最新ビルドを見て Xcode が自動で増やします。`CURRENT_PROJECT_VERSION` は手で上げません。バージョン（`MARKETING_VERSION`）はリリースのときに [Configs/Project.xcconfig](Configs/Project.xcconfig) で上げます
-- Archive / Upload は Actions タブから手動でも実行できます（Run workflow）。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
+- Archive は Actions タブからの手動実行（Run workflow）だけで動きます。`main` への push では動かさず、Build だけを実行します。署名と IPA Export が通ることを確かめたいときに、ブランチを選んで実行します
+- Upload も Actions タブから手動で実行できます。作業ブランチを TestFlight で確かめたいときは、Upload を手動で実行してそのブランチを選びます
 - 実行中の Upload は、次の push が来ても取り消しません（途中で止めると App Store Connect に中途半端なビルドが残るため）
 - App Store Connect にアプリが無いと、Upload はアップロードの前に止まり、「新規アプリ」画面に入力する値（バンドル ID・SKU など）を Job Summary に出します。アプリを作ってから再実行します
 - 輸出コンプライアンスは [Configs/Project.xcconfig](Configs/Project.xcconfig) の `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` で申告しています（Info.plist の `ITSAppUsesNonExemptEncryption`）。アップロードしたビルドは暗号化の質問なしで TestFlight に配信できます。

@@ -112,7 +112,7 @@ Secrets（`APPLE_API_KEY_BASE64`・`APPLE_API_KEY_ID`・`APPLE_API_ISSUER_ID`・
   - App Store 版（`upload` の job。Release 構成の `jp.shilokuma.Demomoni`）と、デバッグモード入りの版（`upload-debug` の job。`demomoni-remake-ios-debug` のスキームを Debug 構成で Archive した `jp.shilokuma.Demomoni-debug`）を別の job で上げる。片方が失敗しても、もう片方は止まらない
   - `_archive.yml` の入力は `scheme`（空ならプロジェクト名）・`configuration`（既定 Release）・`app-name`（アプリが無いときに案内する名前）。IPA の artifact はスキームの名前で分ける
   - Debug 版を上げるには、人間が App Store Connect に `jp.shilokuma.Demomoni-debug` のアプリ（名前の候補は「でももに！β」）を作る（アプリの作成は API でできない。無いうちは `upload-debug` がアップロードの前に止まり、Job Summary に手順を出す）。内部テスターは `TESTFLIGHT_INTERNAL_TESTERS` で同じように入る。リポジトリ変数 `ENABLE_DEBUG_DELIVERY=false` で `upload-debug` だけスキップできる
-- Archive（IPA Export まで。アップロードしない）は `main` への push。どちらも手動実行（workflow_dispatch）できる
+- Archive（IPA Export まで。アップロードしない）は手動実行（workflow_dispatch）だけ。`main` への push では動かさず、Build だけが動く。Upload も手動実行できる
 - ビルド番号は Xcode が App Store Connect の最新ビルドを見て採番するので、`CURRENT_PROJECT_VERSION` は上げない
 - 輸出コンプライアンスは `Configs/Project.xcconfig` の `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` で申告している（TestFlight で暗号化の質問を出さないため）。独自の暗号や標準外のアルゴリズムを入れるときは見直す
 - Xcode は `_archive.yml` の `xcode-version` でも固定している。`_build.yml` と同じ値にそろえる
