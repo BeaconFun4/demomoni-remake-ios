@@ -166,6 +166,33 @@ struct CatalogTests {
         #expect(catalog.piece(id: 1)?.number == 1)
     }
 
+    /// ピースごとの範囲の半径を読む。同梱のピースはすべて半径を持ち、建物 1 つ（80 m）から沼（700 m）までの間にある
+    @Test
+    func decodesRadius() throws {
+        let catalog = try Catalog.load()
+        #expect(catalog.piece(id: 0)?.radius == 100)
+        #expect(catalog.piece(id: 27)?.radius == 700)
+        for piece in catalog.pieces {
+            #expect((80...700).contains(piece.radius), "\(piece.name) の半径 \(piece.radius)")
+        }
+    }
+
+    /// 半径が無いピースは既定の 100 m、0 以下の半径は読み込みのエラーにする
+    @Test
+    func radiusDefaultsAndValidation() throws {
+        let withoutRadius = Data("""
+        {"id": 0, "name": "x", "latitude": "41.0", "longitude": "140.0", "area": "y", "image": "piece1"}
+        """.utf8)
+        #expect(try JSONDecoder().decode(Piece.self, from: withoutRadius).radius == Piece.defaultRadius)
+        #expect(Piece.defaultRadius == 100)
+        let zeroRadius = Data("""
+        {"id": 0, "name": "x", "latitude": "41.0", "longitude": "140.0", "area": "y", "image": "piece1", "radius": 0}
+        """.utf8)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Piece.self, from: zeroRadius)
+        }
+    }
+
     /// 緯度・経度が数値として読めないピースは、読み込みのエラーにする
     @Test
     func rejectsNonNumericCoordinate() {

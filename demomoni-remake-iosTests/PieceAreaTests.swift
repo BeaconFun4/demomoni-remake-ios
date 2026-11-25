@@ -13,9 +13,14 @@ struct PieceAreaTests {
     private let catalog = Catalog.bundled
     private let now = Date(timeIntervalSinceReferenceDate: 800_000_000)
 
-    /// 函館山（いちばん近いほかのピースまで 700 m 以上ある）
+    /// 函館山（範囲の半径 150 m。いちばん近いほかのピースまで 700 m 以上ある）
     private var hakodateyama: Piece {
         catalog.pieces[1]
+    }
+
+    /// じゅんさい沼（範囲の半径 700 m。沼の岸から見えればゲットできる）
+    private var junsaiPond: Piece {
+        catalog.pieces[27]
     }
 
     /// 精度のよい、今測った位置
@@ -42,14 +47,23 @@ struct PieceAreaTests {
         #expect((3_000...3_400).contains(expected))
     }
 
-    /// ピースの場所から半径 100 m の内側ならゲットでき、外側ならできない
+    /// ピースの場所からそのピースの半径の内側ならゲットでき、外側ならできない（半径は場所の広さでピースごとに違う）
+    @Test(arguments: [1, 27])
+    func detectsPieceWithinItsRadius(index: Int) {
+        let piece = catalog.pieces[index]
+        let center = piece.coordinate
+        #expect(PieceArea.pieces(around: fix(at: center), in: catalog.pieces, now: now) == [piece])
+        #expect(PieceArea.pieces(around: fix(at: north(of: center, meters: piece.radius - 10)), in: catalog.pieces, now: now) == [piece])
+        #expect(PieceArea.pieces(around: fix(at: north(of: center, meters: piece.radius + 10)), in: catalog.pieces, now: now).isEmpty)
+    }
+
+    /// 範囲の半径は、建物ほどの場所は小さく、公園・沼・高原のような広い場所は大きい
     @Test
-    func detectsPieceWithinRadius() {
-        let center = hakodateyama.coordinate
-        #expect(PieceArea.radius == 100)
-        #expect(PieceArea.pieces(around: fix(at: center), in: catalog.pieces, now: now) == [hakodateyama])
-        #expect(PieceArea.pieces(around: fix(at: north(of: center, meters: 90)), in: catalog.pieces, now: now) == [hakodateyama])
-        #expect(PieceArea.pieces(around: fix(at: north(of: center, meters: 110)), in: catalog.pieces, now: now).isEmpty)
+    func radiusFollowsPlaceSize() {
+        #expect(hakodateyama.radius == 150)
+        #expect(junsaiPond.radius == 700)
+        #expect(catalog.pieces.first { $0.name == "五稜郭タワー" }?.radius == 100)
+        #expect(catalog.pieces.first { $0.name == "五稜郭公園" }?.radius == 300)
     }
 
     /// 範囲が重なる場所では、範囲に入ったピースを近い順に並べる（獲得済みかは見ない）
@@ -68,20 +82,34 @@ struct PieceAreaTests {
         #expect(PieceArea.pieces(around: fix(at: tokyo), in: catalog.pieces, now: now).isEmpty)
     }
 
-    /// 精度が 100 m より悪い位置・無効な位置（精度が負）は使わない
-    @Test(arguments: [(-1.0, false), (0, true), (100, true), (101, false), (1_000, false)])
+    /// 判定に使う精度の上限は 150 m と範囲の半径の大きいほう
+    @Test(arguments: [(80.0, 150.0), (150, 150), (300, 300), (700, 700)])
+    func accuracyLimitFollowsRadius(radius: Double, limit: Double) {
+        #expect(PieceArea.accuracyLimit(forRadius: radius) == limit)
+    }
+
+    /// 函館山（半径 150 m）では、精度が 150 m より悪い位置・無効な位置（精度が負）では判定しない
+    @Test(arguments: [(-1.0, false), (0, true), (150, true), (151, false), (1_000, false)])
     func usesOnlyAccurateFix(accuracy: Double, isUsable: Bool) {
         let fix = fix(at: hakodateyama.coordinate, accuracy: accuracy)
-        #expect(PieceArea.isUsable(fix, now: now) == isUsable)
         #expect(PieceArea.pieces(around: fix, in: catalog.pieces, now: now).isEmpty == !isUsable)
     }
 
-    /// 30 秒より前に測った位置（位置情報を使い始めた直後に届く古い位置）は使わない
+    /// 広い場所（じゅんさい沼。半径 700 m）では、範囲と同じくらい粗い位置でも判定する
+    @Test(arguments: [(700.0, true), (701, false)])
+    func usesCoarseFixForWideArea(accuracy: Double, isUsable: Bool) {
+        let fix = fix(at: junsaiPond.coordinate, accuracy: accuracy)
+        #expect(PieceArea.contains(fix, in: junsaiPond) == isUsable)
+        #expect(PieceArea.pieces(around: fix, in: catalog.pieces, now: now).contains(junsaiPond) == isUsable)
+    }
+
+    /// 30 秒より前に測った位置（位置情報を使い始めた直後に届く古い位置）・無効な位置は使わない
     @Test(arguments: [(0.0, true), (30, true), (31, false), (3_600, false)])
     func usesOnlyRecentFix(age: TimeInterval, isUsable: Bool) {
         let fix = fix(at: hakodateyama.coordinate, age: age)
-        #expect(PieceArea.isUsable(fix, now: now) == isUsable)
+        #expect(PieceArea.isRecent(fix, now: now) == isUsable)
         #expect(PieceArea.pieces(around: fix, in: catalog.pieces, now: now).isEmpty == !isUsable)
+        #expect(!PieceArea.isRecent(self.fix(at: hakodateyama.coordinate, accuracy: -1, age: age), now: now))
     }
 
     /// ピースの緯度・経度を、範囲の中心にする

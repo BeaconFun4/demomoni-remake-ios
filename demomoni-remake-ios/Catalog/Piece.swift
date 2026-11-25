@@ -20,6 +20,12 @@ nonisolated struct Piece: Decodable, Hashable, Identifiable, Sendable {
     let area: String
     /// ピースの画像のアセット名（例: piece14）
     let image: String
+    /// ゲットできる範囲（場所の緯度・経度を中心にした円）の半径（メートル）。場所の広さに合わせて決める。
+    /// `pieces.json` に無ければ `defaultRadius`
+    let radius: Double
+
+    /// 範囲の半径の既定値（メートル）。建物 1 つほどの場所の大きさ
+    static let defaultRadius: Double = 100
 
     /// 場所の緯度・経度
     var coordinate: Coordinate {
@@ -33,16 +39,25 @@ nonisolated struct Piece: Decodable, Hashable, Identifiable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, latitude, longitude, area, image
+        case id, name, latitude, longitude, area, image, radius
     }
 
-    init(id: Int, name: String, latitude: Double, longitude: Double, area: String, image: String) {
+    init(
+        id: Int,
+        name: String,
+        latitude: Double,
+        longitude: Double,
+        area: String,
+        image: String,
+        radius: Double = defaultRadius
+    ) {
         self.id = id
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
         self.area = area
         self.image = image
+        self.radius = radius
     }
 
     init(from decoder: any Decoder) throws {
@@ -53,6 +68,10 @@ nonisolated struct Piece: Decodable, Hashable, Identifiable, Sendable {
         longitude = try Self.decodeCoordinate(from: container, forKey: .longitude)
         area = try container.decode(String.self, forKey: .area)
         image = try container.decode(String.self, forKey: .image)
+        radius = try container.decodeIfPresent(Double.self, forKey: .radius) ?? Self.defaultRadius
+        guard radius > 0 else {
+            throw DecodingError.dataCorruptedError(forKey: .radius, in: container, debugDescription: "範囲の半径が 0 以下: \(radius)")
+        }
     }
 
     /// 元の JSON では緯度・経度が文字列（"41.794689"）なので、`Double` に直して読む

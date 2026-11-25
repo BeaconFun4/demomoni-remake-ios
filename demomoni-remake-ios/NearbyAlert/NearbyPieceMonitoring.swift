@@ -72,7 +72,7 @@ nonisolated enum NearbyPieceMonitoring {
     /// ピースの場所の円の条件の identifier。ピースの id・緯度・経度・半径を入れる
     /// （CLMonitor の条件はアプリを終えても残るので、同梱データの場所や半径が変わったら別の条件として足し直すため）
     static func identifier(for piece: Piece) -> String {
-        "area-\(piece.id)-\(format(piece.latitude))-\(format(piece.longitude))-\(format(PieceArea.radius))"
+        "area-\(piece.id)-\(format(piece.latitude))-\(format(piece.longitude))-\(format(piece.radius))"
     }
 
     /// 選び直す円の条件の identifier。中心と半径を入れる（選び直すたびに別の条件として足し直すため）
@@ -97,9 +97,9 @@ nonisolated enum NearbyPieceMonitoring {
         }
     }
 
-    /// 見張る条件。まだ獲得していないピースの場所の円（半径は `PieceArea.radius`）が上限に収まれば、すべてを見張る。
-    /// 収まらなければ、今いる場所に近いピースを上限より 1 つ少なく選び、残りの 1 つで今いる場所を中心にした「選び直す円」を見張る。
-    /// 選び直す円は、選ばなかったピースのうちいちばん近いものの範囲に届かない大きさにし、そこから出たら選び直す（`needsReselection(after:)`）。
+    /// 見張る条件。まだ獲得していないピースの場所の円（半径は `Piece.radius`）が上限に収まれば、すべてを見張る。
+    /// 収まらなければ、今いる場所から範囲の縁までが近いピースを上限より 1 つ少なく選び、残りの 1 つで今いる場所を中心にした「選び直す円」を見張る。
+    /// 選び直す円は、選ばなかったピースのどの範囲にも届かない大きさにし、そこから出たら選び直す（`needsReselection(after:)`）。
     /// 今いる場所が分からなければ、同梱データの順に上限まで選ぶ（アプリを開いて場所が分かったら選び直す）
     static func conditions(
         pieces: [Piece],
@@ -114,12 +114,13 @@ nonisolated enum NearbyPieceMonitoring {
         guard let location, limit > 1 else {
             return uncollected.prefix(limit).map(region(for:))
         }
-        // 同じ距離なら同梱データの順（sorted は安定）
+        // 範囲の大きさがピースごとに違うので、中心ではなく範囲の縁までの距離で比べる。同じ距離なら同梱データの順（sorted は安定）
         let sorted = uncollected
-            .map { (piece: $0, distance: location.distance(to: $0.coordinate)) }
-            .sorted { $0.distance < $1.distance }
+            .map { (piece: $0, edgeDistance: location.distance(to: $0.coordinate) - $0.radius) }
+            .sorted { $0.edgeDistance < $1.edgeDistance }
         let monitored = sorted.prefix(limit - 1).map { region(for: $0.piece) }
-        let boundaryRadius = max(sorted[limit - 1].distance - PieceArea.radius, minimumBoundaryRadius)
+        // 選ばなかったピースのうち、範囲の縁がいちばん近いものの縁の手前まで
+        let boundaryRadius = max(sorted[limit - 1].edgeDistance, minimumBoundaryRadius)
         let boundary = MonitoredRegion(
             identifier: boundaryIdentifier(center: location, radius: boundaryRadius),
             center: location,
@@ -171,7 +172,7 @@ nonisolated enum NearbyPieceMonitoring {
 
     /// ピースの場所の円の条件
     private static func region(for piece: Piece) -> MonitoredRegion {
-        MonitoredRegion(identifier: identifier(for: piece), center: piece.coordinate, radius: PieceArea.radius)
+        MonitoredRegion(identifier: identifier(for: piece), center: piece.coordinate, radius: piece.radius)
     }
 
     /// identifier に入れる数（小数 6 桁。緯度・経度ではおよそ 0.1 m）。端末の地域の設定によらず、小数点は「.」

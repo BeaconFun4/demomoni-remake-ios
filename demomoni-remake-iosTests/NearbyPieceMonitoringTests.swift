@@ -47,9 +47,9 @@ struct NearbyPieceMonitoringTests {
                 radius: 100
             ),
             MonitoredRegion(
-                identifier: "area-1-41.759430-140.704641-100.000000",
+                identifier: "area-1-41.759430-140.704641-150.000000",
                 center: Coordinate(latitude: 41.759430, longitude: 140.704641),
-                radius: 100
+                radius: 150
             )
         ])
     }
@@ -88,11 +88,11 @@ struct NearbyPieceMonitoringTests {
         let unmonitored = catalog.pieces.filter { !monitoredNames.contains($0.name) }
         #expect(unmonitored.count == catalog.pieces.count - NearbyPieceMonitoring.conditionLimit + 1)
         for piece in unmonitored {
-            #expect(onumaPark.distance(to: piece.coordinate) >= boundary.radius + PieceArea.radius, "\(piece.name) の範囲に届かない")
+            #expect(onumaPark.distance(to: piece.coordinate) >= boundary.radius + piece.radius, "\(piece.name) の範囲に届かない")
         }
-        // いちばん近い選ばなかったピースの範囲の手前まで
-        let nearestUnmonitored = try #require(unmonitored.map { onumaPark.distance(to: $0.coordinate) }.min())
-        #expect(abs(boundary.radius - (nearestUnmonitored - PieceArea.radius)) < 0.001)
+        // 選ばなかったピースのうち、範囲の縁がいちばん近いものの縁の手前まで
+        let nearestUnmonitoredEdge = try #require(unmonitored.map { onumaPark.distance(to: $0.coordinate) - $0.radius }.min())
+        #expect(abs(boundary.radius - nearestUnmonitoredEdge) < 0.001)
     }
 
     /// 上限を超えるのに今いる場所が分からなければ、同梱データの順に上限まで見張る
@@ -101,6 +101,31 @@ struct NearbyPieceMonitoringTests {
         let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: [], near: nil)
         let expected = catalog.pieces.prefix(NearbyPieceMonitoring.conditionLimit).map(NearbyPieceMonitoring.identifier(for:))
         #expect(conditions.map(\.identifier) == expected)
+    }
+
+    /// 上限を超えるときは、中心ではなく範囲の縁が近い順に選ぶ（中心は遠くても範囲の広い場所を先に選ぶ）
+    @Test
+    func selectsByDistanceToEdge() {
+        let here = Coordinate(latitude: 41.7737, longitude: 140.7266)
+        /// `here` から北へ `meters` の場所のピース
+        func piece(_ id: Int, meters: Double, radius: Double) -> Piece {
+            Piece(
+                id: id,
+                name: "\(id)",
+                latitude: here.latitude + meters / 111_000,
+                longitude: here.longitude,
+                area: "",
+                image: "piece1",
+                radius: radius
+            )
+        }
+        // 縁までの距離は 0: 900 m・1: 800 m・2: 2900 m
+        let pieces = [piece(0, meters: 1_000, radius: 100), piece(1, meters: 1_500, radius: 700), piece(2, meters: 3_000, radius: 100)]
+        let conditions = NearbyPieceMonitoring.conditions(pieces: pieces, collectedPieceIDs: [], near: here, limit: 2)
+        #expect(conditions.first?.identifier == NearbyPieceMonitoring.identifier(for: pieces[1]))
+        #expect(conditions.first?.radius == 700)
+        let edge = here.distance(to: pieces[0].coordinate) - 100
+        #expect(conditions.last.map { abs($0.radius - edge) < 0.001 } == true)
     }
 
     /// 選び直す円は、選ばなかったピースが近くても 200 m より小さくしない
@@ -130,9 +155,19 @@ struct NearbyPieceMonitoringTests {
     @Test
     func identifiersIncludeCenterAndRadius() throws {
         let piece = try #require(catalog.piece(id: 14))
-        #expect(NearbyPieceMonitoring.identifier(for: piece) == "area-14-41.765038-140.708921-100.000000")
+        #expect(NearbyPieceMonitoring.identifier(for: piece) == "area-14-41.765038-140.708921-80.000000")
         let moved = Piece(id: 14, name: piece.name, latitude: 41.7645, longitude: piece.longitude, area: piece.area, image: piece.image)
         #expect(NearbyPieceMonitoring.identifier(for: moved) != NearbyPieceMonitoring.identifier(for: piece))
+        let widened = Piece(
+            id: 14,
+            name: piece.name,
+            latitude: piece.latitude,
+            longitude: piece.longitude,
+            area: piece.area,
+            image: piece.image,
+            radius: 200
+        )
+        #expect(NearbyPieceMonitoring.identifier(for: widened) != NearbyPieceMonitoring.identifier(for: piece))
         #expect(NearbyPieceMonitoring.boundaryIdentifier(center: onumaPark, radius: 1_234.5) == "boundary-41.979000-140.669000-1234.500000")
     }
 
