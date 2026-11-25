@@ -113,8 +113,8 @@ struct CatalogTests {
         #expect(piece.name == "元町公園")
         #expect(piece.area == "元町・函館山")
         #expect(piece.image == "piece14")
-        #expect(piece.latitude == 41.794689)
-        #expect(piece.longitude == 140.754003)
+        #expect(piece.latitude == 41.765501)
+        #expect(piece.longitude == 140.709514)
     }
 
     /// なぞなぞのタイトル・問題文・ヒント・答え・ピースを読む。元アプリの 2 問は文言を変えず、先頭に置く

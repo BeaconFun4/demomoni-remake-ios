@@ -17,8 +17,8 @@ struct PieceMapLocationTests {
     @Test
     func coordinateComesFromPieceData() {
         let coordinate = PieceMapLocation.coordinate(for: hakodateyama)
-        #expect(coordinate.latitude == 41.759167)
-        #expect(coordinate.longitude == 140.704444)
+        #expect(coordinate.latitude == 41.759430)
+        #expect(coordinate.longitude == 140.704641)
     }
 
     /// 地図の範囲は、ピースの場所を中心にした、南北・東西が決めた幅（メートル）のもの
