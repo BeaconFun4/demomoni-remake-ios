@@ -53,7 +53,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   `refresh()` が `CLMonitor` を開くのは、オンで許可がそろっている人だけ（片付けのためだけに開かない。#120）
 - `ContentView` の `TabView` に 4 つのタブを置く。表示しているタブは `TabSelection`（`@Observable`。値は `nonisolated` の `AppTab`）で持ち、初期選択はさがす。近くのピースの通知を開いたとき・デバッグモードの擬似検知で、外からさがすタブに切り替える
   - `Riddle/` … なぞなぞ（一覧 → 詳細で問題文と「ヒントをみる」）。答えの場所のピースを獲得したなぞなぞは、一覧に印を付け、詳細に答えを出す（`RiddleProgress`）
-  - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ位置情報で今いる場所を調べ、未獲得のピースの場所（半径 100 m）に入ったら保存して「ピースをゲットしたよ！！」を出す（範囲が重なるときは近いものから 1 つずつ。`PieceAcquisition`）
+  - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ位置情報で今いる場所を調べ、未獲得のピースの場所の範囲（ピースごとの半径）に入ったら保存して「ピースをゲットしたよ！！」を出す（範囲が重なるときは近いものから 1 つずつ。`PieceAcquisition`）
     - 歩くうさぎ（`SearchView.walkingRabbit`）の景色は SF Symbols。重なり順は 空の雲（`cloud.fill`）→ 遠くの建物（`building.2.fill`）→ 道の画像（`road` = `way.png`）→ 街路樹（`tree.fill`）→ うさぎの GIF（`tekuusa`）。雲と建物は道の画像の `background`、木は `overlay` に `StreetSceneryView` で置く。景色はうさぎの後ろへ（手前から奥へ）遠ざかり、奥で消えたら手前から出てくる。並び（位置・大きさ・不透明度）は `StreetScenery`（道の画像に対する割合の座標）が層（`Layer`。`trees`・`buildings`・`clouds`）ごとに遠近法で計算し、遠くの層ほど遠くに置いてゆっくり動かす（視差）。速さ・数・間隔・大きさ・向きは `StreetScenery` の定数、色は `StreetSceneryView` の定数。Reduce Motion では止まった並びを出し、VoiceOver には読ませない（ラベルは「道を歩くうさぎ」のまま）
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
     - 盤のすぐ上に、ゲットした数と同梱の全ピースの数を言葉を付けずに「3 / 32」の形で出す（`PieceCount`。同梱に無い id・重なった id は数えない。読み上げは「ゲットしたピース 3 こ、全部で 32 こ」）
@@ -62,11 +62,11 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 
 データと状態:
 
-- `Catalog/` … 同梱データ（`Resources/Data/` の `pieces.json`・`riddles.json`。ピースは 32 件（函館 24・大沼 4・北斗 4。場所は緯度・経度 = `Piece.coordinate`）、なぞなぞも 32 件）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。なぞなぞとピースは `Riddle.pieceId` = `Piece.id` で 1 対 1（答え = ピースの場所の名前。ヒントは答えの 1 文字を「◯」で伏せたもの）、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- `Catalog/` … 同梱データ（`Resources/Data/` の `pieces.json`・`riddles.json`。ピースは 32 件（函館 24・大沼 4・北斗 4。場所は緯度・経度 = `Piece.coordinate` と範囲の半径 `radius`（メートル。無ければ `Piece.defaultRadius` = 100）。緯度・経度は OpenStreetMap・Wikidata・国土地理院で確かめた位置で、広い場所は訪れた人が行く地点を中心にする）、なぞなぞも 32 件）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。なぞなぞとピースは `Riddle.pieceId` = `Piece.id` で 1 対 1（答え = ピースの場所の名前。ヒントは答えの 1 文字を「◯」で伏せたもの）、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
 - ピースの画像（`Assets.xcassets/Pieces/`）は盤の 32 マスぶん（`piece1`〜`piece32`。400 × 400 の中央の 200 × 200 がマス）。`piece1`・`piece14` は元アプリのもの、残りの 30 枚は `scripts/make-piece-images.swift` で `goryokaku_long` を `PieceAllBorder` の形に切り出したもの（既にある画像は上書きしない）
 - `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込み（獲得・まとめて獲得・サイン・1 ピースを外す・全部消す）は `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
 - `Detection/` … ピースの場所の範囲に入ったかの検知（さがすタブを表示している間だけ）。`PieceDetector`（`@Observable`）が `LocationScanner` を包む。実機は `CoreLocationScanner`（`startUpdatingLocation()`。使用中の許可・正確な位置情報が要る）、テストは `FakeLocationScanner`
-  - 範囲の判定は `PieceArea`（純粋な関数）: ピースの緯度・経度から半径 `radius`（100 m）以内のピースを近い順に返す。精度が `maximumHorizontalAccuracy`（100 m）より悪い位置・`maximumAge`（30 秒）より古い位置は使わない。`detectedPieces` には獲得済みのピースも入り、さがすタブが未獲得のいちばん近いものを選ぶ
+  - 範囲の判定は `PieceArea`（純粋な関数）: ピースの緯度・経度から、そのピースの `radius` 以内のピースを中心が近い順に返す。精度が `accuracyLimit(forRadius:)`（150 m と半径の大きいほう）より悪い位置・`maximumAge`（30 秒）より古い位置は使わない。`detectedPieces` には獲得済みのピースも入り、さがすタブが未獲得のいちばん近いものを選ぶ
   - 出来事（許可の変化・測った位置 `LocationFix`）は `LocationScanner.events`（`AsyncStream`）で流し、`PieceDetector` が `for await` で受ける。デリゲートは continuation に `yield` するだけ（`MainActor.assumeIsolated` を使わない）。テストは `onEventHandled` で扱い終えるのを待つ（固定時間で待たない）
   - 使用中の許可は `CLServiceSession(authorization: .whenInUse)`（`LocationSession` の protocol の後ろ）で求める。調べていて、許可がまだ・許可済みの間だけ持ち、まだ尋ねていなければ作った時点で尋ねる（さがすタブを最初に表示したとき）
   - デバッグモードからは `injectDetection(pieceID:)` で「そのピースの場所に来た」を外から入れる（調べていなければ次の `start()` まで持っておく）
@@ -77,7 +77,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - TestFlight の `1.0 (4)`（iOS 27.0）で、起動時に片付けのために開いた `CLMonitor.init(_:)` の中の assertion で落ちた（#120。原因は確定していない）。そのため次の 3 つを守る:
     片付けのためだけに開かない（上の `refresh()`）／`CLMonitor` はプロセスで 1 つだけ（`CoreLocationRegionMonitor.shared`。開く処理は `OpenOnce` で 1 回にまとめ、開いている途中の呼び出しは同じ `Task` を待つ）／
     位置情報の許可が「常に」か「使用中」のときだけ開く（`NearbyPieceMonitoring.canOpenMonitor`。開けなければ `setConditions`・`removeAllConditions` は何もせず `false` を返し、記録は残す）
-  - 見張る条件は `NearbyPieceMonitoring.conditions`: 未獲得のピースが 20 か所（`CLMonitor` の上限）以下ならすべて（identifier `area-<id>-<緯度>-<経度>-<半径>`。場所や半径を変えたら別の条件として足し直す）。超えるときは、`RegionMonitor.lastKnownCoordinate`（最後に分かった場所）に近い 19 か所と、そこを中心にした選び直す円（`boundary-<緯度>-<経度>-<半径>`。選ばなかったピースのうちいちばん近いものの範囲に届かない大きさ、200 m 以上）。選び直す円から出た（`.unsatisfied`）出来事で `refresh()` する（`needsReselection(after:)`）。場所が分からなければ同梱データの順に 20 か所。同梱は 32 か所なので、獲得が 12 個に届くまでは選び直す円を使う。前の版のビーコンの条件（`beacon-…`）は、条件をそろえるときに外れる
+  - 見張る条件は `NearbyPieceMonitoring.conditions`: 未獲得のピースが 20 か所（`CLMonitor` の上限）以下ならすべて（identifier `area-<id>-<緯度>-<経度>-<半径>`。場所や半径を変えたら別の条件として足し直す）。超えるときは、`RegionMonitor.lastKnownCoordinate`（最後に分かった場所）から範囲の縁が近い 19 か所（半径がピースごとに違うので、中心ではなく縁までの距離で比べる）と、そこを中心にした選び直す円（`boundary-<緯度>-<経度>-<半径>`。選ばなかったピースのどの範囲にも届かない大きさ、200 m 以上）。選び直す円から出た（`.unsatisfied`）出来事で `refresh()` する（`needsReselection(after:)`）。場所が分からなければ同梱データの順に 20 か所。同梱は 32 か所なので、獲得が 12 個に届くまでは選び直す円を使う。前の版のビーコンの条件（`beacon-…`）は、条件をそろえるときに外れる
   - `.satisfied` の出来事で、未獲得のピース・アプリが前面（active）でないときだけローカル通知（identifier `piece-<id>`、`userInfo` の `pieceID`）を出す。獲得は保存しない（さがすタブで行う）
   - `CLMonitor`・`CLServiceSession(.always)`・「常に許可」は `RegionMonitor`（実機 `CoreLocationRegionMonitor`）、通知は `PieceNotifier`（実機 `UserNotificationPieceNotifier`）の protocol の後ろ。`-uiTesting`・Unit テストのホストでは何もしない `Inactive…` に差し替える（許可のダイアログを出さない）
   - `PieceNotificationResponder`（`UNUserNotificationCenterDelegate`）: 近くのピースの通知を開いたら `TabSelection` をさがすタブにする（開くタブは `AppTab.forNotification` で決める）
