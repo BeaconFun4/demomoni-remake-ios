@@ -42,13 +42,13 @@ struct NearbyPieceMonitoringTests {
         let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: collected, near: nil)
         #expect(conditions == [
             MonitoredRegion(
-                identifier: "area-0-41.794689-140.754003-100.000000",
-                center: Coordinate(latitude: 41.794689, longitude: 140.754003),
+                identifier: "area-0-41.765501-140.709514-100.000000",
+                center: Coordinate(latitude: 41.765501, longitude: 140.709514),
                 radius: 100
             ),
             MonitoredRegion(
-                identifier: "area-1-41.759167-140.704444-100.000000",
-                center: Coordinate(latitude: 41.759167, longitude: 140.704444),
+                identifier: "area-1-41.759430-140.704641-100.000000",
+                center: Coordinate(latitude: 41.759430, longitude: 140.704641),
                 radius: 100
             )
         ])
@@ -77,8 +77,8 @@ struct NearbyPieceMonitoringTests {
             .filter { monitoredIdentifiers.contains(NearbyPieceMonitoring.identifier(for: $0)) }
             .map(\.name)
         #expect(monitoredNames.count == NearbyPieceMonitoring.conditionLimit - 1)
-        // 大沼の 4 か所と北斗の 4 か所は、大沼公園から近いので選ぶ（函館の市街は 20 km 以上離れている）
-        for name in ["大沼公園", "大沼国際交流プラザ", "東大沼キャンプ場", "じゅんさい沼", "新函館北斗駅", "トラピスト修道院", "きじひき高原"] {
+        // 大沼の 4 か所と、北斗のうち内陸の 3 か所は、大沼公園から近いので選ぶ（函館の市街は 20 km 以上離れている）
+        for name in ["大沼公園", "大沼国際交流プラザ", "東大沼キャンプ場", "じゅんさい沼", "新函館北斗駅", "きじひき高原", "北斗市総合文化センター"] {
             #expect(monitoredNames.contains(name), "\(name) を見張る")
         }
 
@@ -130,7 +130,7 @@ struct NearbyPieceMonitoringTests {
     @Test
     func identifiersIncludeCenterAndRadius() throws {
         let piece = try #require(catalog.piece(id: 14))
-        #expect(NearbyPieceMonitoring.identifier(for: piece) == "area-14-41.764400-140.711000-100.000000")
+        #expect(NearbyPieceMonitoring.identifier(for: piece) == "area-14-41.765038-140.708921-100.000000")
         let moved = Piece(id: 14, name: piece.name, latitude: 41.7645, longitude: piece.longitude, area: piece.area, image: piece.image)
         #expect(NearbyPieceMonitoring.identifier(for: moved) != NearbyPieceMonitoring.identifier(for: piece))
         #expect(NearbyPieceMonitoring.boundaryIdentifier(center: onumaPark, radius: 1_234.5) == "boundary-41.979000-140.669000-1234.500000")

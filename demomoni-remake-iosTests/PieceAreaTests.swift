@@ -55,10 +55,10 @@ struct PieceAreaTests {
     /// 範囲が重なる場所では、範囲に入ったピースを近い順に並べる（獲得済みかは見ない）
     @Test
     func ordersOverlappingPiecesByDistance() throws {
-        let station = try #require(catalog.pieces.first { $0.name == "函館駅" })
-        let names = PieceArea.pieces(around: fix(at: station.coordinate), in: catalog.pieces, now: now).map(\.name)
-        // 函館朝市は函館駅から 75 m、摩周丸は 230 m
-        #expect(names == ["函館駅", "函館朝市"])
+        let magistrate = try #require(catalog.pieces.first { $0.name == "箱館奉行所" })
+        let names = PieceArea.pieces(around: fix(at: magistrate.coordinate), in: catalog.pieces, now: now).map(\.name)
+        // 箱館奉行所は五稜郭公園の中（公園の中心から 24 m）
+        #expect(names == ["箱館奉行所", "五稜郭公園"])
     }
 
     /// どのピースの範囲にも入っていなければ空
@@ -87,7 +87,7 @@ struct PieceAreaTests {
     /// ピースの緯度・経度を、範囲の中心にする
     @Test
     func pieceCoordinate() {
-        #expect(hakodateyama.coordinate == Coordinate(latitude: 41.759167, longitude: 140.704444))
+        #expect(hakodateyama.coordinate == Coordinate(latitude: 41.759430, longitude: 140.704641))
     }
 
     /// CoreLocation の位置から、緯度・経度・精度・日時を写す

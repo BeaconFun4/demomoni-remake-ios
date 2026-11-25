@@ -23,9 +23,9 @@ struct PieceDetectorTests {
         .located(fix(at: catalog.pieces[1].coordinate))
     }
 
-    /// 函館駅の場所（函館朝市の範囲とも重なる）にいる
-    private var atHakodateStation: LocationScanEvent {
-        .located(fix(at: Coordinate(latitude: 41.7737, longitude: 140.7266)))
+    /// 箱館奉行所の場所（五稜郭公園の範囲とも重なる）にいる
+    private var atHakodateMagistrate: LocationScanEvent {
+        .located(fix(at: catalog.pieces[4].coordinate))
     }
 
     /// どのピースの範囲にも入っていない場所（東京駅）にいる
@@ -230,8 +230,8 @@ struct PieceDetectorTests {
         let detector = PieceDetector(catalog: catalog, scanner: scanner)
         detector.start()
 
-        await scanner.send(atHakodateStation, to: detector)
-        #expect(detector.detectedPieces.map(\.name) == ["函館駅", "函館朝市"])
+        await scanner.send(atHakodateMagistrate, to: detector)
+        #expect(detector.detectedPieces.map(\.name) == ["箱館奉行所", "五稜郭公園"])
     }
 
     /// どのピースの範囲にも入っていなければ出さない。前に入ったピースも消さない（画面で扱う前に次の位置が届いたとき）
