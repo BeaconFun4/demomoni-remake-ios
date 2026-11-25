@@ -160,6 +160,8 @@ struct PiecePhotoActions: View {
 
     /// ライブラリで選んだ写真を読み込み、縮めて受け取る
     private func importPhoto(from item: PhotosPickerItem) async {
+        // 読み込んでいる間に表へ戻されて、この View が画面から外れても保存できるよう、保存先を先に持っておく
+        let collection = PieceCollection(context: modelContext)
         isProcessing = true
         defer { isProcessing = false }
         guard let data = try? await item.loadTransferable(type: Data.self),
@@ -167,26 +169,27 @@ struct PiecePhotoActions: View {
             errorTitle = "しゃしんをよみこめませんでした"
             return
         }
-        receive(jpeg)
+        receive(jpeg, into: collection)
     }
 
     /// カメラで撮った写真を縮めて受け取る
     private func importPhoto(from image: UIImage) async {
+        let collection = PieceCollection(context: modelContext)
         isProcessing = true
         defer { isProcessing = false }
         guard let jpeg = await Self.jpegData(from: image) else {
             errorTitle = "しゃしんをよみこめませんでした"
             return
         }
-        receive(jpeg)
+        receive(jpeg, into: collection)
     }
 
     /// 新しい写真を受け取る。手書きがあれば消えるので確かめてから、無ければすぐに保存する
-    private func receive(_ jpeg: Data) {
+    private func receive(_ jpeg: Data, into collection: PieceCollection) {
         if drawing != nil {
             pendingPhoto = jpeg
         } else {
-            save(jpeg)
+            write(into: collection) { try $0.savePhoto(jpeg, pieceID: pieceID) }
         }
     }
 
@@ -195,8 +198,9 @@ struct PiecePhotoActions: View {
     }
 
     /// 写真を書き換える。保存できなければ知らせる
-    private func write(_ change: (PieceCollection) throws -> Bool) {
-        let saved = (try? change(PieceCollection(context: modelContext))) ?? false
+    /// - Parameter collection: 保存先。`nil` ならこの View の `modelContext`
+    private func write(into collection: PieceCollection? = nil, _ change: (PieceCollection) throws -> Bool) {
+        let saved = (try? change(collection ?? PieceCollection(context: modelContext))) ?? false
         if !saved {
             errorTitle = "しゃしんをほぞんできませんでした"
         }
