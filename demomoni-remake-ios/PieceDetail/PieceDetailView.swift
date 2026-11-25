@@ -6,7 +6,8 @@
 import SwiftData
 import SwiftUI
 
-/// ピース詳細。ピースの画像（サインがあれば重ねる）と、獲得した日時・エリア・場所を出す
+/// ピース詳細。ピースの画像（サインがあれば重ねる）と、獲得した日時・エリア・場所を出す。
+/// ピースを「うらがえす」と裏側が出て、その場所で撮った写真を入れ、写真の上に手書きできる
 struct PieceDetailView: View {
     let piece: Piece
 
@@ -20,6 +21,8 @@ struct PieceDetailView: View {
     }
 
     @State private var showsSignature = false
+    /// 裏側（写真）を出しているか
+    @State private var showsBack = false
     #if DEBUG
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -40,20 +43,43 @@ struct PieceDetailView: View {
                     .font(.demomoni(size: 40, relativeTo: .largeTitle))
                     .accessibilityAddTraits(.isHeader)
 
-                PieceWithSignature(piece: piece, signature: record?.signature)
-                    .containerRelativeFrame(.horizontal) { width, _ in
-                        min(width * 0.8, 400)
-                    }
-
-                Button("サインをかく！") {
-                    showsSignature = true
+                PieceFlipCard(showsBack: showsBack) {
+                    PieceWithSignature(piece: piece, signature: record?.signature)
+                } back: {
+                    PieceBackSide(photo: record?.photo, drawing: record?.photoDrawing)
                 }
-                .font(.demomoni(size: 26, relativeTo: .title2))
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-                .tint(.themeColorPink)
+                .containerRelativeFrame(.horizontal) { width, _ in
+                    min(width * 0.8, 400)
+                }
+                .contentShape(.rect)
+                // ピースを押してもうらがえせる（読み上げでは下の「うらがえす」を使う）
+                .onTapGesture {
+                    flip()
+                }
+
+                if showsBack, let record {
+                    PiecePhotoActions(pieceID: piece.id, photo: record.photo, drawing: record.photoDrawing)
+                } else {
+                    Button("サインをかく！") {
+                        showsSignature = true
+                    }
+                    .font(.demomoni(size: 26, relativeTo: .title2))
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .tint(.themeColorPink)
+                    .foregroundStyle(Color.themeColorGray)
+                    // 獲得していないピースにはサインを保存できない
+                    .disabled(record == nil)
+                }
+
+                Button("うらがえす", systemImage: "arrow.trianglehead.2.clockwise.rotate.90") {
+                    flip()
+                }
+                .font(.demomoni(size: 18, relativeTo: .body))
+                .buttonStyle(.glass)
                 .foregroundStyle(Color.themeColorGray)
-                // 獲得していないピースにはサインを保存できない
+                .accessibilityValue(showsBack ? "うら" : "おもて")
+                // 獲得していないピースの裏には写真を保存できない
                 .disabled(record == nil)
 
                 VStack(alignment: .leading, spacing: 12) {
@@ -100,6 +126,14 @@ struct PieceDetailView: View {
             Text(errorMessage ?? "")
         }
         #endif
+    }
+
+    /// 表と裏を入れ替える。獲得していないピースはうらがえさない（裏に写真を保存できない）
+    private func flip() {
+        guard record != nil else {
+            return
+        }
+        showsBack.toggle()
     }
 
     #if DEBUG

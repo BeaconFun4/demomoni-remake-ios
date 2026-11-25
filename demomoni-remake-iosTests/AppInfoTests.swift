@@ -103,4 +103,13 @@ struct AppInfoTests {
         )
         #expect(usesEncryption == false)
     }
+
+    /// カメラの利用目的が Info.plist に入っていることを確認する。
+    /// 無いと、ピースの裏側に入れる写真を撮ろうとしたときにアプリが落ちる。写真ライブラリは PhotosPicker なので利用目的は要らない
+    @Test
+    func cameraUsageDescriptionIsSet() {
+        let description = Bundle.main.object(forInfoDictionaryKey: "NSCameraUsageDescription") as? String
+        #expect(description == "ピースの裏側に入れる、その場所の写真を撮るために使います")
+        #expect(Bundle.main.object(forInfoDictionaryKey: "NSPhotoLibraryUsageDescription") == nil)
+    }
 }
