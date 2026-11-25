@@ -50,4 +50,14 @@ struct LaunchOptionsTests {
         #expect(LaunchOptions(arguments: ["app", "-collectedPieceIDs", "1,x"]).collectedPieceIDs == [1])
         #expect(LaunchOptions(arguments: ["app"]).collectedPieceIDs.isEmpty)
     }
+
+    /// `-samplePhotoPieceIDs` で裏側に見本の写真を入れるピースをカンマ区切りで指定する。数でないものは読み飛ばす
+    @Test
+    func readsSamplePhotoPieceIDs() {
+        let options = LaunchOptions(arguments: ["app", "-uiTesting", "-collectedPieceIDs", "0,1", "-samplePhotoPieceIDs", "1,x"])
+        #expect(options.samplePhotoPieceIDs == [1])
+        #expect(options.collectedPieceIDs == [0, 1])
+        #expect(LaunchOptions(arguments: ["app"]).samplePhotoPieceIDs.isEmpty)
+        #expect(LaunchOptions(arguments: ["app", "-samplePhotoPieceIDs"]).samplePhotoPieceIDs.isEmpty)
+    }
 }

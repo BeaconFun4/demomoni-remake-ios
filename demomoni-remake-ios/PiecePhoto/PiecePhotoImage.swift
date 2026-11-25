@@ -57,8 +57,8 @@ nonisolated enum PiecePhotoImage {
         image.jpegData(compressionQuality: 1).flatMap { jpegData(from: $0) }
     }
 
-    /// 画像を JPEG に書き出す。透明なところは白で埋める（JPEG は透明を持てず、そのままだと黒くなる）。メタデータは書かない
-    private static func jpegData(from image: CGImage) -> Data? {
+    /// 画像を JPEG に書き出す（縮めない）。透明なところは白で埋める（JPEG は透明を持てず、そのままだと黒くなる）。メタデータは書かない
+    static func jpegData(from image: CGImage) -> Data? {
         guard let opaque = opaqueImage(image) else {
             return nil
         }

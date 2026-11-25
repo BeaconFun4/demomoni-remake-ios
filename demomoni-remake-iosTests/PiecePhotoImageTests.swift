@@ -86,6 +86,17 @@ struct PiecePhotoImageTests {
         #expect(PiecePhotoImage.jpegData(from: Data()) == nil)
     }
 
+    /// UI テストの見本の写真（`-samplePhotoPieceIDs`）は描いた絵で、保存するときと同じ JPEG（4 : 3・長い辺は 2048 px 以下）
+    @Test
+    func samplePhotoIsSavableJPEG() throws {
+        let data = try #require(SamplePhoto.jpegData())
+        let saved = try properties(of: data)
+        #expect(saved[kCGImagePropertyPixelWidth] as? Int == SamplePhoto.width)
+        #expect(saved[kCGImagePropertyPixelHeight] as? Int == SamplePhoto.height)
+        #expect(max(SamplePhoto.width, SamplePhoto.height) <= PiecePhotoImage.maximumPixelLength)
+        #expect(try typeIdentifier(of: data) == UTType.jpeg.identifier)
+    }
+
     // MARK: - テスト用の画像
 
     /// 左半分が青・右半分が緑の不透明な画像
