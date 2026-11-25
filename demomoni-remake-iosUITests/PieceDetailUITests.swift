@@ -88,4 +88,32 @@ final class PieceDetailUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["日時を変える"].waitForNonExistence(timeout: 5), "保存したらシートを閉じる")
         XCTAssertTrue(app.staticTexts["ピース No.14"].exists, "ピース詳細に戻る")
     }
+
+    /// ピース詳細の場所の下に地図が出て、押すと大きな地図（「マップでひらく」）のシートが開き、「とじる」で詳細に戻る
+    @MainActor
+    func testShowsPieceLocationMap() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting", "-collectedPieceIDs", "1"]
+        app.launch()
+
+        app.tabButton("いちらん").tap()
+        let piece = app.buttons["ピース No.1 函館山"]
+        XCTAssertTrue(piece.waitForExistence(timeout: 10), "獲得したピースのボタン")
+        piece.tap()
+        XCTAssertTrue(app.staticTexts["ピース No.1"].waitForExistence(timeout: 10), "ピース詳細")
+
+        let map = app.buttons["函館山の地図"]
+        XCTAssertTrue(map.waitForExistence(timeout: 10), "場所の地図")
+        if !map.isHittable {
+            app.swipeUp()
+        }
+        map.tap()
+
+        let openInMaps = app.buttons["マップでひらく"]
+        XCTAssertTrue(openInMaps.waitForExistence(timeout: 10), "大きな地図のシート")
+        XCTAssertTrue(app.navigationBars["函館山"].exists, "シートの見出しは場所の名前")
+        app.buttons["とじる"].tap()
+        XCTAssertTrue(openInMaps.waitForNonExistence(timeout: 10), "とじるでシートを閉じる")
+        XCTAssertTrue(app.staticTexts["ピース No.1"].exists, "ピース詳細に戻る")
+    }
 }
