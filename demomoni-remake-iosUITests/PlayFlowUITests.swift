@@ -16,33 +16,33 @@ final class PlayFlowUITests: XCTestCase {
     @MainActor
     func testFromDetectionToSignature() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-uiTesting", "-fakeBeaconID", "0"]
+        app.launchArguments = ["-uiTesting", "-fakePieceID", "1"]
         app.launch()
 
-        // さがすタブで、擬似検知が 2 秒後に元町公園のビーコンを見つける
+        // さがすタブで、擬似検知が 2 秒後に函館山の場所にいることにする（ほかのピースの範囲と重ならない）
         let gotTitle = app.staticTexts["ピースをゲットしたよ！！"]
         XCTAssertTrue(gotTitle.waitForExistence(timeout: 30))
-        XCTAssertTrue(app.staticTexts["元町公園"].exists)
+        XCTAssertTrue(app.staticTexts["函館山"].exists)
         app.buttons["とじる"].tap()
         XCTAssertTrue(gotTitle.waitForNonExistence(timeout: 10))
 
         // いちらんの盤に、獲得したピースだけが出る
         app.tabButton("いちらん").tap()
-        let piece = app.buttons["ピース No.14 元町公園"]
+        let piece = app.buttons["ピース No.1 函館山"]
         XCTAssertTrue(piece.waitForExistence(timeout: 10))
-        XCTAssertFalse(app.buttons["ピース No.1 函館山"].exists)
+        XCTAssertFalse(app.buttons["ピース No.14 元町公園"].exists)
 
         // ピース詳細
         piece.tap()
-        XCTAssertTrue(app.staticTexts["ピース No.14"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts["ばしょ:元町公園"].exists)
+        XCTAssertTrue(app.staticTexts["ピース No.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ばしょ:函館山"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["ピースの画像"].exists)
 
         // サインの画面を開き、保存せずに閉じる
         app.buttons["サインをかく！"].tap()
         XCTAssertTrue(app.buttons["ピースがめんにもどる"].waitForExistence(timeout: 10))
         app.buttons["ピースがめんにもどる"].tap()
-        XCTAssertTrue(app.staticTexts["ピース No.14"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["ピース No.1"].waitForExistence(timeout: 10))
 
         // もう一度開いて描き、保存すると詳細のピースにサインが重なる
         app.buttons["サインをかく！"].tap()

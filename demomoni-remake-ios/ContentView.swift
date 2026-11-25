@@ -58,7 +58,7 @@ extension EnvironmentValues {
     let container = try! ModelContainer.demomoni(inMemory: true)
     ContentView()
         .environment(TabSelection())
-        .environment(BeaconDetector.live(options: options, catalog: .bundled))
+        .environment(PieceDetector.live(options: options, catalog: .bundled))
         .environment(NearbyPieceAlerts.live(options: options, catalog: .bundled, container: container))
         .modelContainer(container)
 }
