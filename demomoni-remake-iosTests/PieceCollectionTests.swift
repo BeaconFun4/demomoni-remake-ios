@@ -228,4 +228,80 @@ struct PieceCollectionTests {
         let other = PieceCollection(context: ModelContext(container))
         #expect(try other.record(pieceID: 0)?.signature == Data([9]))
     }
+
+    /// 獲得済みのピースに写真を保存でき、2 回目は置き換える。写真を替えると、前の写真に描いた手書きは消える
+    @Test
+    func savePhotoReplacesPhotoAndClearsDrawing() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        #expect(try collection.savePhoto(Data([1]), pieceID: 0))
+        #expect(try collection.savePhotoDrawing(Data([9]), pieceID: 0))
+        #expect(try collection.record(pieceID: 0)?.photoDrawing == Data([9]))
+
+        #expect(try collection.savePhoto(Data([2]), pieceID: 0))
+        let record = try #require(try collection.record(pieceID: 0))
+        #expect(record.photo == Data([2]))
+        #expect(record.photoDrawing == nil)
+        #expect(record.collectedAt == firstDate)
+    }
+
+    /// 獲得していないピースには写真を保存せず、記録も作らない
+    @Test
+    func savePhotoIgnoresUncollectedPiece() throws {
+        #expect(try !collection.savePhoto(Data([1]), pieceID: 0))
+        #expect(try collection.collectedPieceIDs().isEmpty)
+    }
+
+    /// 手書きは写真を入れたピースにだけ保存でき、`nil` なら消す
+    @Test
+    func savePhotoDrawingNeedsPhoto() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        #expect(try !collection.savePhotoDrawing(Data([9]), pieceID: 0))
+        #expect(try !collection.savePhotoDrawing(Data([9]), pieceID: 1))
+
+        try collection.savePhoto(Data([1]), pieceID: 0)
+        #expect(try collection.savePhotoDrawing(Data([9]), pieceID: 0))
+        #expect(try collection.savePhotoDrawing(nil, pieceID: 0))
+        #expect(try collection.record(pieceID: 0)?.photoDrawing == nil)
+        #expect(try collection.record(pieceID: 0)?.photo == Data([1]))
+    }
+
+    /// 写真を消すと手書きも消える。獲得の記録とサインは残す
+    @Test
+    func removePhotoKeepsRecordAndSignature() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.saveSignature(Data([5]), pieceID: 0)
+        try collection.savePhoto(Data([1]), pieceID: 0)
+        try collection.savePhotoDrawing(Data([9]), pieceID: 0)
+
+        #expect(try collection.removePhoto(pieceID: 0))
+        let record = try #require(try collection.record(pieceID: 0))
+        #expect(record.photo == nil)
+        #expect(record.photoDrawing == nil)
+        #expect(record.signature == Data([5]))
+        #expect(try !collection.removePhoto(pieceID: 0))
+        #expect(try !collection.removePhoto(pieceID: 1))
+    }
+
+    /// まとめて獲得しても、獲得済みのピースの写真と手書きは残す
+    @Test
+    func collectAllKeepsPhoto() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.savePhoto(Data([1]), pieceID: 0)
+        try collection.savePhotoDrawing(Data([9]), pieceID: 0)
+
+        try collection.collectAll(pieceIDs: [0, 1], at: laterDate)
+        #expect(try collection.record(pieceID: 0)?.photo == Data([1]))
+        #expect(try collection.record(pieceID: 0)?.photoDrawing == Data([9]))
+        #expect(try collection.record(pieceID: 1)?.photo == nil)
+    }
+
+    /// 保存した写真は、同じストアの別の `ModelContext` からも読める
+    @Test
+    func savedPhotoIsVisibleFromAnotherContext() throws {
+        try collection.collect(pieceID: 0, at: firstDate)
+        try collection.savePhoto(Data([1, 2, 3]), pieceID: 0)
+
+        let other = PieceCollection(context: ModelContext(container))
+        #expect(try other.record(pieceID: 0)?.photo == Data([1, 2, 3]))
+    }
 }
