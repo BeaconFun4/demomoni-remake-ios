@@ -19,6 +19,7 @@
     - せっていタブのデバッグモード（下の「アプリの構成」）
   - これらを確かめるときは、TestFlight の「でももに！β」（アイコンの下部に「debug」）を入れて使います。TestFlight の「でももに！」（App Store 版）では空きマスを押しても埋まりません
 - App Store 版のアイコン（`AppIcon`）は Icon Composer の [AppIcon.icon](demomoni-remake-ios/AppIcon.icon)（Liquid Glass）です。元の絵（[docs/app-icon/demomoni-AppIcon.png](docs/app-icon/demomoni-AppIcon.png)）から `swift scripts/make-app-icon-layers.swift` で層（キャラクター・パズルのピース）を切り出し、背景の水色は `icon.json` の塗りで表しています。Debug 用のアイコン（`AppIcon-Debug`）は同じ元の絵から `swift scripts/make-debug-app-icon.swift` で作る平面の画像です
+- タブのアイコンは、うさと小物（なぞなぞ = ？、さがす = 虫眼鏡、いちらん = パズルのピース、せってい = 歯車）を組み合わせた単色の PDF（[TabIcon](demomoni-remake-ios/Assets.xcassets/TabIcon)）で、`swift scripts/make-tab-icons.swift` で作ります。タブバーが、選択中はピンク、それ以外はラベルと同じ色で塗ります
 - スキームは 2 つあります。`demomoni-remake-ios` は App Store 版（Archive は Release）、`demomoni-remake-ios-debug` はデバッグモード入りの版（Run・Archive とも Debug）です
 - プロジェクトはフォルダ同期グループ（Xcode 16 以降の形式）で管理しているので、ファイルの追加・削除で pbxproj は変わりません
 - SwiftLint のルールは [.swiftlint.yml](.swiftlint.yml) で管理します
