@@ -45,3 +45,9 @@
 - `AppIcon.icon` を `demomoni-remake-ios/` の下に置くと、`APP_ICON_NAME = AppIcon` のまま actool が拾い、Release 構成のビルドで `AppIcon60x60@2x.png`・`AppIcon76x76@2x~ipad.png` を書き出す（pbxproj・xcconfig は変えていない）。同じ名前の `AppIcon.appiconset` は消した（2026-10-22）
 - `ictool <.icon> --export-image …` は書き出すたびに標準出力へ `{` と `}` の 2 行を出す。エラーではない（終了コードで見る）（2026-10-22）
 - `icon.json` の背景の塗りは `"fill" : { "solid" : "srgb:<r>,<g>,<b>,1.00000" }`（0〜1 の小数 5 桁）。`scripts/make-app-icon-layers.swift` が元の絵の水色をこの形で表示する（2026-10-22）
+
+## ピースの裏側の写真
+
+- `CollectedPiece` に任意の値（`photo`・`photoDrawing`）を足すだけなら、`VersionedSchema` を書かなくても SwiftData の軽量の移行で前の版のストアを開ける。確かめるテストは、テストのターゲットに前の版の `@Model final class CollectedPiece` を `enum` の中に入れて書く（エンティティの名前は入れ子でもクラスの名前だけになるので、同じストアの記録として読める。`CollectedPieceMigrationTests`）（2026-11-26）
+- `SWIFT_APPROACHABLE_CONCURRENCY = YES` なので、`nonisolated async` の関数は呼んだ側の actor（View なら MainActor）で動く。写真を縮めるなどの重い処理を MainActor の外で行うには `@concurrent` を付ける（2026-11-26）
+- iOS 26 の Simulator では `UIImagePickerController.isSourceTypeAvailable(.camera)` が `true` になり、「しゃしんをとる」が出る。UI テストで「カメラの無い端末」を前提にしない（2026-11-26）
