@@ -86,7 +86,10 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 - サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
 - ピースの裏側の写真と手書きは `CollectedPiece` の `photo`・`photoDrawing`（どちらも任意の値で `.externalStorage`。前の版のストアは軽量の移行で開ける。`CollectedPieceMigrationTests`）。書き込みは `PieceCollection` の `savePhoto`（手書きを消す）・`savePhotoDrawing`（写真が無ければ保存しない）・`removePhoto`
   - 写真は保存の前に `PiecePhotoImage` で長い辺を 2048 px までに縮め、向きを画素に焼き込んだ JPEG に書き直す（位置情報などのメタデータを残さない。透明なところは白）。重いので `@concurrent` の関数で MainActor の外で行う（`SWIFT_APPROACHABLE_CONCURRENCY = YES` なので、ただの `nonisolated async` だと呼んだ側の actor で動く）
-  - 裏側は写真のまんなかを正方形に切り抜いて出す（`PiecePhotoSquare`）。手書きはサインと同じく、正方形の枠を 400 × 400 とした座標で保存する（`SignatureCanvasController` と `SignatureDrawing` を使い回す）
+  - 裏側（`PieceBackSurface`）は、表のピースの画像を左右反転した形（`PieceBackSilhouette`）で、白い裏地・写真・手書きをまとめて切り抜く（形の外に出さない）。手書きの画面（`PhotoDrawingView`）も同じ形・同じ範囲で、キャンバスも形で切り抜く
+  - 裏側は画面の幅いっぱい（`PieceBackLayout.backSide`。上限 560）に大きく出し、表は今までの大きさ（`frontSide`）に縮めて同じ置き場所に置く。回しながら表の大きさから裏の大きさへ動かす（`PieceFlip.scale`）。
+    出すのはピースの画像（400 × 400）のうち、どのピースも収まる `PieceBackLayout.visibleRect`（60〜340。32 枚とも収まることを `PieceBackLayoutTests` で確かめる）。写真の無いときの案内は、どのピースでも内側になる `innerRect`（140〜260）の中に出す
+  - 手書きはサインと同じ 400 × 400 の座標で保存する。キャンバスには `visibleRect` の部分だけを出すので、`SignatureCanvasController(visibleRect:)`・`SignatureDrawing.normalized(_:fromSide:visibleRect:)` で範囲に合わせて直す
   - カメラの利用目的は `Configs/Project.xcconfig` の `INFOPLIST_KEY_NSCameraUsageDescription`
 - 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない
 
