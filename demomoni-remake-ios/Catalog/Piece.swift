@@ -5,10 +5,10 @@
 
 import Foundation
 
-/// 集めるピースの 1 つ（`pieces.json` の 1 件）。
+/// 集めるピースの 1 つ（`pieces.json` の 1 件）。場所（緯度・経度）の範囲に入るとゲットできる（`PieceArea`）。
 /// 元の JSON の `hasGot`・`date` は固定値なので読まない（獲得したかどうかと日時は端末に保存する）
 nonisolated struct Piece: Decodable, Hashable, Identifiable, Sendable {
-    /// ピースの id。同じ値の `Beacon.beaconId` のビーコンで獲得する
+    /// ピースの id。獲得状態（`CollectedPiece.pieceID`）となぞなぞ（`Riddle.pieceId`）がこの値でピースを指す
     let id: Int
     /// 場所の名前（例: 元町公園）
     let name: String
