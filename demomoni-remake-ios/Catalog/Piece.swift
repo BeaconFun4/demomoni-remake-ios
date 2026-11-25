@@ -21,6 +21,11 @@ nonisolated struct Piece: Decodable, Hashable, Identifiable, Sendable {
     /// ピースの画像のアセット名（例: piece14）
     let image: String
 
+    /// 場所の緯度・経度
+    var coordinate: Coordinate {
+        Coordinate(latitude: latitude, longitude: longitude)
+    }
+
     /// ピースの番号。画像の名前の末尾の数字（`piece14` → 14）で、いちらんの 32 マスのどこに置くかを表す。
     /// 画像の名前に数字が無ければ `nil`
     var number: Int? {
