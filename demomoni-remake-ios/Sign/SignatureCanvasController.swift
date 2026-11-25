@@ -27,13 +27,15 @@ final class SignatureCanvasController {
     /// 最初に置く、保存してあったサイン（保存する座標のまま）
     @ObservationIgnored private var initialDrawing: PKDrawing?
 
-    /// - Parameter signature: 保存してあったサインのデータ。描き足せるように最初に置く
-    init(signature: Data?) {
+    /// - Parameters:
+    ///   - signature: 保存してあったサイン（写真の上の手書きにも使う）のデータ。描き足せるように最初に置く
+    ///   - accessibilityLabel: 描くところの読み上げ
+    init(signature: Data?, accessibilityLabel: String = "サインをかくところ") {
         initialDrawing = signature.flatMap { try? PKDrawing(data: $0) }
         canvasView.drawingPolicy = .anyInput
         canvasView.backgroundColor = .clear
         canvasView.isOpaque = false
-        canvasView.accessibilityLabel = "サインをかくところ"
+        canvasView.accessibilityLabel = accessibilityLabel
         canvasView.overrideUserInterfaceStyle = .light
         select(.pen)
     }

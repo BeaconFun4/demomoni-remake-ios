@@ -90,4 +90,16 @@ struct SignatureCanvasControllerTests {
         #expect(controller.tool == .eraser)
         #expect(controller.canvasView.tool is PKEraserTool)
     }
+
+    /// 描くところの読み上げは、サインと写真の上の手書きで分ける。写真の上の手書きも、サインと同じ座標で保存する
+    @Test
+    func usesAccessibilityLabelAndSameCoordinatesForPhotoDrawing() {
+        #expect(SignatureCanvasController(signature: nil).canvasView.accessibilityLabel == "サインをかくところ")
+        let controller = SignatureCanvasController(signature: savedSignature, accessibilityLabel: "しゃしんにかきこむところ")
+        #expect(controller.canvasView.accessibilityLabel == "しゃしんにかきこむところ")
+        controller.layout(side: 300)
+        let data = controller.signatureData()
+        let drawing = data.flatMap { try? PKDrawing(data: $0) }
+        #expect(abs((drawing?.bounds.midX ?? 0) - 200) < 1)
+    }
 }
