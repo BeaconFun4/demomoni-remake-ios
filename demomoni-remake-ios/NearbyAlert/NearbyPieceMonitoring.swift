@@ -5,25 +5,31 @@
 
 import Foundation
 
-/// CLMonitor で見張るビーコンの条件（`CLMonitor.BeaconIdentityCondition` の値）
-nonisolated struct MonitoredBeacon: Hashable, Sendable {
+/// CLMonitor で見張る円の条件（`CLMonitor.CircularGeographicCondition` の値）
+nonisolated struct MonitoredRegion: Hashable, Sendable {
     /// CLMonitor に足すときの identifier
     let identifier: String
-    let uuid: UUID
-    /// `nil` なら、この UUID のすべての major
-    let major: UInt16?
-    /// `nil` なら、この UUID（と major）のすべての minor
-    let minor: UInt16?
+    /// 円の中心
+    let center: Coordinate
+    /// 円の半径（メートル）
+    let radius: Double
 }
 
 /// CLMonitor から届く出来事
-nonisolated struct BeaconRegionEvent: Equatable, Sendable {
+nonisolated struct RegionEvent: Equatable, Sendable {
+    /// 円の内側にいるか
+    enum State: Sendable {
+        /// 内側に入った（`.satisfied`）
+        case inside
+        /// 外側に出た（`.unsatisfied`）
+        case outside
+        /// まだ分からない・見張っていない
+        case unknown
+    }
+
     /// 出来事の条件の identifier
     let identifier: String
-    /// 範囲に入ったか（`.satisfied`）
-    let isInside: Bool
-    /// どのビーコンで条件を満たしたか（`refinement`）。分からなければ `nil`
-    let beacon: DetectedBeacon?
+    let state: State
 }
 
 /// 近くのピースを知らせるローカル通知の中身
@@ -50,39 +56,28 @@ nonisolated enum LocationAuthorization: Sendable {
 /// 「アプリを閉じていても近くのピースを知らせる」の判定。CoreLocation・UserNotifications から切り出してテストする
 nonisolated enum NearbyPieceMonitoring {
     /// CLMonitor の名前。起動するたびに同じ名前で作り直すと、前に足した条件と出来事を受け取れる
+    /// （前の版のビーコンの条件も同じ名前の CLMonitor にあり、条件をそろえるときに外れる）
     static let monitorName = "nearby-pieces"
     /// 1 つのアプリで見張れる条件の数の上限（CoreLocation の地域の監視と同じ 20）
     static let conditionLimit = 20
+    /// 選び直す円の半径の下限（メートル）。小さすぎる円は、出たことが分かりにくいため
+    static let minimumBoundaryRadius: Double = 200
     /// 通知の `userInfo` のピースの id のキー
     static let pieceIDKey = "pieceID"
     /// 近くのピースの通知の identifier の頭（続けてピースの id）
     static let notificationIdentifierPrefix = "piece-"
+    /// 選び直す円の条件の identifier の頭
+    static let boundaryIdentifierPrefix = "boundary-"
 
-    /// ビーコン 1 台の条件の identifier。UUID・major・minor を入れる
-    /// （CLMonitor の条件はアプリを終えても残るので、同梱データの値が変わったら別の条件として足し直すため）
-    static func identifier(for beacon: Beacon) -> String {
-        "beacon-\(beacon.uuid.uuidString)-\(beacon.major)-\(beacon.minor)"
+    /// ピースの場所の円の条件の identifier。ピースの id・緯度・経度・半径を入れる
+    /// （CLMonitor の条件はアプリを終えても残るので、同梱データの場所や半径が変わったら別の条件として足し直すため）
+    static func identifier(for piece: Piece) -> String {
+        "area-\(piece.id)-\(format(piece.latitude))-\(format(piece.longitude))-\(format(PieceArea.radius))"
     }
 
-    /// UUID のすべてのビーコンの条件の identifier
-    static func identifier(uuid: UUID) -> String {
-        "beacon-uuid-\(uuid.uuidString)"
-    }
-
-    /// ビーコン 1 台の条件の identifier から、そのビーコンを読む。ビーコン 1 台の条件でなければ `nil`
-    static func beacon(fromIdentifier identifier: String) -> DetectedBeacon? {
-        guard identifier.hasPrefix("beacon-"), !identifier.hasPrefix("beacon-uuid-") else {
-            return nil
-        }
-        // UUID も「-」を含むので、後ろの 2 つを major・minor として読む
-        let parts = identifier.dropFirst("beacon-".count).split(separator: "-")
-        guard parts.count >= 3,
-              let minor = UInt16(parts[parts.count - 1]),
-              let major = UInt16(parts[parts.count - 2]),
-              let uuid = UUID(uuidString: parts.dropLast(2).joined(separator: "-")) else {
-            return nil
-        }
-        return DetectedBeacon(uuid: uuid, major: major, minor: minor)
+    /// 選び直す円の条件の identifier。中心と半径を入れる（選び直すたびに別の条件として足し直すため）
+    static func boundaryIdentifier(center: Coordinate, radius: Double) -> String {
+        "\(boundaryIdentifierPrefix)\(format(center.latitude))-\(format(center.longitude))-\(format(radius))"
     }
 
     /// 監視するか。スイッチがオンで、位置情報が「常に」・正確な位置情報がオン・通知が許可されているときだけ
@@ -102,37 +97,54 @@ nonisolated enum NearbyPieceMonitoring {
         }
     }
 
-    /// 見張る条件。まだ獲得していないピースのビーコンが上限に収まれば 1 台ずつ、
-    /// 収まらなければ UUID ごとにまとめる（どのビーコンかは出来事の `refinement` で分かる）
-    static func conditions(beacons: [Beacon], collectedPieceIDs: Set<Int>, limit: Int = conditionLimit) -> [MonitoredBeacon] {
-        let uncollected = beacons.filter { !collectedPieceIDs.contains($0.beaconId) }
-        if uncollected.count <= limit {
-            return uncollected.map {
-                MonitoredBeacon(identifier: identifier(for: $0), uuid: $0.uuid, major: $0.major, minor: $0.minor)
-            }
+    /// 見張る条件。まだ獲得していないピースの場所の円（半径は `PieceArea.radius`）が上限に収まれば、すべてを見張る。
+    /// 収まらなければ、今いる場所に近いピースを上限より 1 つ少なく選び、残りの 1 つで今いる場所を中心にした「選び直す円」を見張る。
+    /// 選び直す円は、選ばなかったピースのうちいちばん近いものの範囲に届かない大きさにし、そこから出たら選び直す（`needsReselection(after:)`）。
+    /// 今いる場所が分からなければ、同梱データの順に上限まで選ぶ（アプリを開いて場所が分かったら選び直す）
+    static func conditions(
+        pieces: [Piece],
+        collectedPieceIDs: Set<Int>,
+        near location: Coordinate?,
+        limit: Int = conditionLimit
+    ) -> [MonitoredRegion] {
+        let uncollected = pieces.filter { !collectedPieceIDs.contains($0.id) }
+        guard uncollected.count > limit else {
+            return uncollected.map(region(for:))
         }
-        var uuids: [UUID] = []
-        for beacon in uncollected where !uuids.contains(beacon.uuid) {
-            uuids.append(beacon.uuid)
+        guard let location, limit > 1 else {
+            return uncollected.prefix(limit).map(region(for:))
         }
-        return uuids.prefix(limit).map {
-            MonitoredBeacon(identifier: identifier(uuid: $0), uuid: $0, major: nil, minor: nil)
-        }
+        // 同じ距離なら同梱データの順（sorted は安定）
+        let sorted = uncollected
+            .map { (piece: $0, distance: location.distance(to: $0.coordinate)) }
+            .sorted { $0.distance < $1.distance }
+        let monitored = sorted.prefix(limit - 1).map { region(for: $0.piece) }
+        let boundaryRadius = max(sorted[limit - 1].distance - PieceArea.radius, minimumBoundaryRadius)
+        let boundary = MonitoredRegion(
+            identifier: boundaryIdentifier(center: location, radius: boundaryRadius),
+            center: location,
+            radius: boundaryRadius
+        )
+        return monitored + [boundary]
     }
 
-    /// 出来事で知らせるピース。範囲に入った・アプリが前面でない・まだ獲得していないピースのビーコンのときだけ。
-    /// どのビーコンか分からない（UUID ごとの条件で `refinement` が無い）ときは知らせない（獲得済みのピースで知らせないため）
+    /// 出来事で選び直すか。選び直す円から出たときだけ
+    static func needsReselection(after event: RegionEvent) -> Bool {
+        event.identifier.hasPrefix(boundaryIdentifierPrefix) && event.state == .outside
+    }
+
+    /// 出来事で知らせるピース。範囲に入った・アプリが前面でない・まだ獲得していないピースの円のときだけ。
+    /// 同梱データの今の場所と半径の条件でなければ（前の版の条件・選び直す円）知らせない
     static func pieceToNotify(
-        for event: BeaconRegionEvent,
+        for event: RegionEvent,
         catalog: Catalog,
         collectedPieceIDs: Set<Int>,
         isAppActive: Bool
     ) -> Piece? {
-        guard event.isInside, !isAppActive else {
+        guard event.state == .inside, !isAppActive else {
             return nil
         }
-        guard let beacon = event.beacon ?? beacon(fromIdentifier: event.identifier),
-              let piece = catalog.piece(forBeaconUUID: beacon.uuid, major: beacon.major, minor: beacon.minor),
+        guard let piece = catalog.pieces.first(where: { identifier(for: $0) == event.identifier }),
               !collectedPieceIDs.contains(piece.id) else {
             return nil
         }
@@ -155,5 +167,15 @@ nonisolated enum NearbyPieceMonitoring {
             body: "さがすタブをひらいて、ピースをゲットしよう",
             pieceID: piece.id
         )
+    }
+
+    /// ピースの場所の円の条件
+    private static func region(for piece: Piece) -> MonitoredRegion {
+        MonitoredRegion(identifier: identifier(for: piece), center: piece.coordinate, radius: PieceArea.radius)
+    }
+
+    /// identifier に入れる数（小数 6 桁。緯度・経度ではおよそ 0.1 m）。端末の地域の設定によらず、小数点は「.」
+    private static func format(_ value: Double) -> String {
+        String(format: "%.6f", value)
     }
 }
