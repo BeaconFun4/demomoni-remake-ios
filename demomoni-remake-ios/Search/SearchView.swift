@@ -91,7 +91,7 @@ struct SearchView: View {
             }
         }
         .tabItem {
-            Image(systemName: "magnifyingglass")
+            Image(.tabSearch)
             Text("さがす")
         }
     }

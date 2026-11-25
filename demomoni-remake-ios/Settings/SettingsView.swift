@@ -36,7 +36,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .tabItem {
-            Image(systemName: "gearshape.fill")
+            Image(.tabSettings)
             Text("せってい")
         }
     }
