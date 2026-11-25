@@ -25,6 +25,12 @@ struct PieceFlipTests {
         #expect(PieceFlip.frontOpacity(at: angle) == expected)
     }
 
+    /// 回しながら、表の大きさから裏の大きさへ少しずつ大きくする（真横で急に変わらない）。範囲の外の角度でも表と裏の間に収める
+    @Test(arguments: [(0.0, 0.8), (90, 0.9), (180, 1.0), (-10, 0.8), (200, 1.0)])
+    func scaleGrowsTowardBack(angle: Double, expected: Double) {
+        #expect(abs(PieceFlip.scale(at: angle, frontScale: 0.8) - expected) < 0.0001)
+    }
+
     /// 裏側の読み上げは、写真があるか・手書きしたかで変える
     @Test
     func backLabel() {

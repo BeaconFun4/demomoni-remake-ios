@@ -11,7 +11,7 @@ import SwiftUI
 /// あれば「かきこむ！」・「しゃしんをかえる」・「しゃしんをけす」（確かめてから消す）。
 /// 写真は保存の前に縮め、位置情報などのメタデータを消す（`PiecePhotoImage`）。端末の外へは送らない
 struct PiecePhotoActions: View {
-    let pieceID: Int
+    let piece: Piece
     /// 今の写真。無ければ写真を入れる操作だけを出す
     let photo: Data?
     /// 今の手書き。あれば、写真を替える前に確かめる（替えると消えるため）
@@ -99,12 +99,12 @@ struct PiecePhotoActions: View {
         }
         .fullScreenCover(isPresented: $showsDrawing) {
             if let photo {
-                PhotoDrawingView(pieceID: pieceID, photo: photo, drawing: drawing)
+                PhotoDrawingView(piece: piece, photo: photo, drawing: drawing)
             }
         }
         .alert("しゃしんをけす？", isPresented: $confirmsRemoval) {
             Button("けす", role: .destructive) {
-                write { try $0.removePhoto(pieceID: pieceID) }
+                write { try $0.removePhoto(pieceID: piece.id) }
             }
             Button("やめる", role: .cancel) {}
         } message: {
@@ -189,12 +189,12 @@ struct PiecePhotoActions: View {
         if drawing != nil {
             pendingPhoto = jpeg
         } else {
-            write(into: collection) { try $0.savePhoto(jpeg, pieceID: pieceID) }
+            write(into: collection) { try $0.savePhoto(jpeg, pieceID: piece.id) }
         }
     }
 
     private func save(_ jpeg: Data) {
-        write { try $0.savePhoto(jpeg, pieceID: pieceID) }
+        write { try $0.savePhoto(jpeg, pieceID: piece.id) }
     }
 
     /// 写真を書き換える。保存できなければ知らせる

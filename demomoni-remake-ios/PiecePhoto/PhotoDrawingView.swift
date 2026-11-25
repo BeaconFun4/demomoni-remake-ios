@@ -7,10 +7,11 @@ import SwiftData
 import SwiftUI
 
 /// ピースの裏側の写真の上に手書きする画面（サイン・落書き・飾り）。
-/// 写真を正方形に切り抜いた枠の上に描き、ペンの種類・色・消しゴムは PencilKit のツールピッカーで選ぶ。
+/// ピース詳細の裏側と同じく、ピースを裏から見た形の中の写真に、画面の幅いっぱいの大きさで描く。描いたものも形の外には出さない。
+/// ペンの種類・色・消しゴムは PencilKit のツールピッカーで選ぶ。
 /// 「これでかんせい！」で保存して閉じ、「ピースがめんにもどる」で保存せずに閉じる
 struct PhotoDrawingView: View {
-    let pieceID: Int
+    let piece: Piece
     /// 下に敷く写真の JPEG
     let photo: Data
 
@@ -21,10 +22,15 @@ struct PhotoDrawingView: View {
     @State private var showsSaveError = false
 
     /// - Parameter drawing: 保存してあった手書き。描き足せるように最初に置く
-    init(pieceID: Int, photo: Data, drawing: Data?) {
-        self.pieceID = pieceID
+    init(piece: Piece, photo: Data, drawing: Data?) {
+        self.piece = piece
         self.photo = photo
-        _controller = State(initialValue: SignatureCanvasController(signature: drawing, accessibilityLabel: "しゃしんにかきこむところ"))
+        // キャンバスには、400 × 400 の座標のうちピースが入るまんなかだけを出す（ピース詳細の裏側と同じ範囲）
+        _controller = State(initialValue: SignatureCanvasController(
+            signature: drawing,
+            accessibilityLabel: "しゃしんにかきこむところ",
+            visibleRect: PieceBackLayout.visibleRect
+        ))
     }
 
     var body: some View {
@@ -66,28 +72,31 @@ struct PhotoDrawingView: View {
         }
     }
 
-    /// 写真の上に描くところ。写真を正方形に切り抜いた枠と同じ大きさ
+    /// 写真の上に描くところ。ピース詳細の裏側と同じ形・同じ範囲で、画面の幅いっぱいに出す。
+    /// 描いた線もピースを裏から見た形で切り抜き、形の外には出さない
     private var canvas: some View {
         ZStack {
-            PiecePhotoSquare(photo: photo, drawing: nil)
+            PieceBackSurface(piece: piece, photo: photo, drawing: nil)
                 .accessibilityHidden(true)
             PhotoDrawingCanvas(controller: controller)
+                .mask {
+                    PieceBackSilhouette(piece: piece)
+                }
         }
         .aspectRatio(1, contentMode: .fit)
-        .clipShape(.rect(cornerRadius: 16))
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width
         } action: { side in
             controller.layout(side: side)
         }
-        .frame(maxWidth: 600)
+        .frame(maxWidth: PieceBackLayout.maximumBackSide)
     }
 
     /// 手書きを保存して閉じる。保存できなければ知らせて、描いたものは残す
     private func save() {
         do {
             let saved = try PieceCollection(context: modelContext)
-                .savePhotoDrawing(controller.signatureData(), pieceID: pieceID)
+                .savePhotoDrawing(controller.signatureData(), pieceID: piece.id)
             if saved {
                 dismiss()
             } else {

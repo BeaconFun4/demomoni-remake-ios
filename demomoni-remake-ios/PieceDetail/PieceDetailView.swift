@@ -43,13 +43,14 @@ struct PieceDetailView: View {
                     .font(.demomoni(size: 40, relativeTo: .largeTitle))
                     .accessibilityAddTraits(.isHeader)
 
+                // 置き場所は裏の大きさ（画面の幅いっぱい）。表は今までの大きさ（画面の幅の 8 割・400 まで）に縮めて出す
                 PieceFlipCard(showsBack: showsBack) {
                     PieceWithSignature(piece: piece, signature: record?.signature)
                 } back: {
-                    PieceBackSide(photo: record?.photo, drawing: record?.photoDrawing)
+                    PieceBackSide(piece: piece, photo: record?.photo, drawing: record?.photoDrawing)
                 }
                 .containerRelativeFrame(.horizontal) { width, _ in
-                    min(width * 0.8, 400)
+                    PieceBackLayout.backSide(containerWidth: width)
                 }
                 .contentShape(.rect)
                 // ピースを押してもうらがえせる（読み上げでは下の「うらがえす」を使う）
@@ -58,7 +59,7 @@ struct PieceDetailView: View {
                 }
 
                 if showsBack, let record {
-                    PiecePhotoActions(pieceID: piece.id, photo: record.photo, drawing: record.photoDrawing)
+                    PiecePhotoActions(piece: piece, photo: record.photo, drawing: record.photoDrawing)
                 } else {
                     Button("サインをかく！") {
                         showsSignature = true
