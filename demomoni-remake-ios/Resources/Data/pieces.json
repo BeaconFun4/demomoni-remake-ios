@@ -5,320 +5,352 @@
             "name": "元町公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.794689",
-            "longitude": "140.754003",
+            "latitude": "41.765501",
+            "longitude": "140.709514",
             "area": "元町・函館山",
-            "image": "piece14"
+            "image": "piece14",
+            "radius": 100
         },
         {
             "id": 1,
             "name": "函館山",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.759167",
-            "longitude": "140.704444",
+            "latitude": "41.759430",
+            "longitude": "140.704641",
             "area": "元町・函館山",
-            "image": "piece1"
+            "image": "piece1",
+            "radius": 150
         },
         {
             "id": 2,
             "name": "五稜郭タワー",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.794500",
-            "longitude": "140.753900",
+            "latitude": "41.794643",
+            "longitude": "140.753965",
             "area": "五稜郭",
-            "image": "piece2"
+            "image": "piece2",
+            "radius": 100
         },
         {
             "id": 3,
             "name": "五稜郭公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.796900",
-            "longitude": "140.757000",
+            "latitude": "41.796718",
+            "longitude": "140.756838",
             "area": "五稜郭",
-            "image": "piece3"
+            "image": "piece3",
+            "radius": 300
         },
         {
             "id": 4,
             "name": "箱館奉行所",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.797300",
-            "longitude": "140.756600",
+            "latitude": "41.796933",
+            "longitude": "140.756902",
             "area": "五稜郭",
-            "image": "piece4"
+            "image": "piece4",
+            "radius": 80
         },
         {
             "id": 5,
             "name": "北海道立函館美術館",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.795100",
-            "longitude": "140.757600",
+            "latitude": "41.793422",
+            "longitude": "140.754630",
             "area": "五稜郭",
-            "image": "piece5"
+            "image": "piece5",
+            "radius": 100
         },
         {
             "id": 6,
             "name": "函館市中央図書館",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.792500",
-            "longitude": "140.754700",
+            "latitude": "41.798187",
+            "longitude": "140.753614",
             "area": "五稜郭",
-            "image": "piece6"
+            "image": "piece6",
+            "radius": 100
         },
         {
             "id": 7,
             "name": "千代台公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.788900",
-            "longitude": "140.745400",
+            "latitude": "41.785508",
+            "longitude": "140.747099",
             "area": "五稜郭",
-            "image": "piece7"
+            "image": "piece7",
+            "radius": 200
         },
         {
             "id": 8,
             "name": "金森赤レンガ倉庫",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.767100",
-            "longitude": "140.717900",
+            "latitude": "41.766307",
+            "longitude": "140.716844",
             "area": "ベイエリア",
-            "image": "piece8"
+            "image": "piece8",
+            "radius": 150
         },
         {
             "id": 9,
             "name": "函館市地域交流まちづくりセンター",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.765000",
-            "longitude": "140.716000",
+            "latitude": "41.763733",
+            "longitude": "140.716927",
             "area": "ベイエリア",
-            "image": "piece9"
+            "image": "piece9",
+            "radius": 100
         },
         {
             "id": 10,
             "name": "函館朝市",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.773100",
-            "longitude": "140.726200",
+            "latitude": "41.772379",
+            "longitude": "140.724788",
             "area": "函館駅前",
-            "image": "piece10"
+            "image": "piece10",
+            "radius": 120
         },
         {
             "id": 11,
             "name": "函館駅",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.773700",
-            "longitude": "140.726600",
+            "latitude": "41.773797",
+            "longitude": "140.726126",
             "area": "函館駅前",
-            "image": "piece11"
+            "image": "piece11",
+            "radius": 100
         },
         {
             "id": 12,
             "name": "摩周丸",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.774500",
-            "longitude": "140.724000",
+            "latitude": "41.772956",
+            "longitude": "140.721917",
             "area": "函館駅前",
-            "image": "piece12"
+            "image": "piece12",
+            "radius": 100
         },
         {
             "id": 13,
             "name": "八幡坂",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.766000",
-            "longitude": "140.713900",
+            "latitude": "41.764732",
+            "longitude": "140.712733",
             "area": "元町・函館山",
-            "image": "piece13"
+            "image": "piece13",
+            "radius": 150
         },
         {
             "id": 14,
             "name": "旧函館区公会堂",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.764400",
-            "longitude": "140.711000",
+            "latitude": "41.765038",
+            "longitude": "140.708921",
             "area": "元町・函館山",
-            "image": "piece15"
+            "image": "piece15",
+            "radius": 80
         },
         {
             "id": 15,
             "name": "函館ハリストス正教会",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.763700",
-            "longitude": "140.712600",
+            "latitude": "41.762829",
+            "longitude": "140.712218",
             "area": "元町・函館山",
-            "image": "piece16"
+            "image": "piece16",
+            "radius": 80
         },
         {
             "id": 16,
             "name": "カトリック元町教会",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.763300",
-            "longitude": "140.713500",
+            "latitude": "41.763257",
+            "longitude": "140.713160",
             "area": "元町・函館山",
-            "image": "piece17"
+            "image": "piece17",
+            "radius": 80
         },
         {
             "id": 17,
             "name": "函館公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.759800",
-            "longitude": "140.717500",
+            "latitude": "41.756278",
+            "longitude": "140.715282",
             "area": "元町・函館山",
-            "image": "piece18"
+            "image": "piece18",
+            "radius": 150
         },
         {
             "id": 18,
             "name": "立待岬",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.749000",
-            "longitude": "140.724000",
+            "latitude": "41.745030",
+            "longitude": "140.721185",
             "area": "元町・函館山",
-            "image": "piece19"
+            "image": "piece19",
+            "radius": 150
         },
         {
             "id": 19,
             "name": "啄木小公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.768600",
-            "longitude": "140.743200",
+            "latitude": "41.772485",
+            "longitude": "140.754118",
             "area": "大森浜",
-            "image": "piece20"
+            "image": "piece20",
+            "radius": 100
         },
         {
             "id": 20,
             "name": "湯の川温泉",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.779900",
-            "longitude": "140.789800",
+            "latitude": "41.779614",
+            "longitude": "140.785680",
             "area": "湯の川",
-            "image": "piece21"
+            "image": "piece21",
+            "radius": 300
         },
         {
             "id": 21,
             "name": "函館市熱帯植物園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.775200",
-            "longitude": "140.800800",
+            "latitude": "41.774080",
+            "longitude": "140.789307",
             "area": "湯の川",
-            "image": "piece22"
+            "image": "piece22",
+            "radius": 120
         },
         {
             "id": 22,
             "name": "香雪園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.795600",
-            "longitude": "140.792900",
+            "latitude": "41.793458",
+            "longitude": "140.802712",
             "area": "湯の川",
-            "image": "piece23"
+            "image": "piece23",
+            "radius": 300
         },
         {
             "id": 23,
             "name": "トラピスチヌ修道院",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.789000",
-            "longitude": "140.818000",
+            "latitude": "41.787711",
+            "longitude": "140.822631",
             "area": "湯の川",
-            "image": "piece24"
+            "image": "piece24",
+            "radius": 200
         },
         {
             "id": 24,
             "name": "大沼公園",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.979000",
-            "longitude": "140.669000",
+            "latitude": "41.984500",
+            "longitude": "140.673800",
             "area": "大沼",
-            "image": "piece25"
+            "image": "piece25",
+            "radius": 250
         },
         {
             "id": 25,
             "name": "大沼国際交流プラザ",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.978900",
-            "longitude": "140.670300",
+            "latitude": "41.980588",
+            "longitude": "140.670413",
             "area": "大沼",
-            "image": "piece26"
+            "image": "piece26",
+            "radius": 100
         },
         {
             "id": 26,
             "name": "東大沼キャンプ場",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.990000",
-            "longitude": "140.705000",
+            "latitude": "42.012042",
+            "longitude": "140.715805",
             "area": "大沼",
-            "image": "piece27"
+            "image": "piece27",
+            "radius": 200
         },
         {
             "id": 27,
             "name": "じゅんさい沼",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.983000",
-            "longitude": "140.637000",
+            "latitude": "41.985461",
+            "longitude": "140.630646",
             "area": "大沼",
-            "image": "piece28"
+            "image": "piece28",
+            "radius": 700
         },
         {
             "id": 28,
             "name": "新函館北斗駅",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.904600",
-            "longitude": "140.648700",
+            "latitude": "41.904612",
+            "longitude": "140.648669",
             "area": "北斗",
-            "image": "piece29"
+            "image": "piece29",
+            "radius": 150
         },
         {
             "id": 29,
             "name": "トラピスト修道院",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.851000",
-            "longitude": "140.539000",
+            "latitude": "41.739700",
+            "longitude": "140.569800",
             "area": "北斗",
-            "image": "piece30"
+            "image": "piece30",
+            "radius": 250
         },
         {
             "id": 30,
             "name": "きじひき高原",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.889000",
-            "longitude": "140.605000",
+            "latitude": "41.924720",
+            "longitude": "140.614550",
             "area": "北斗",
-            "image": "piece31"
+            "image": "piece31",
+            "radius": 500
         },
         {
             "id": 31,
             "name": "北斗市総合文化センター",
             "hasGot": false,
             "date": "yyyy/mm/dd",
-            "latitude": "41.823600",
-            "longitude": "140.653200",
+            "latitude": "41.824977",
+            "longitude": "140.651287",
             "area": "北斗",
-            "image": "piece32"
+            "image": "piece32",
+            "radius": 100
         }
     ]
 }

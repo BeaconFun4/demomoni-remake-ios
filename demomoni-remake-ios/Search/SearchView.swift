@@ -8,11 +8,11 @@
 import SwiftData
 import SwiftUI
 
-/// さがすタブ。表示している間だけ近くの iBeacon を探し、まだ獲得していないピースを見つけたら
+/// さがすタブ。表示している間だけ位置情報で今いる場所を調べ、まだ獲得していないピースの場所の範囲（半径 100 m）に入ったら
 /// 獲得を保存して「ピースをゲットしたよ！！」画面を出す。
 /// 歩くうさぎと道を出し、`genbausa` のボタンでチュートリアルを開く
 struct SearchView: View {
-    @Environment(BeaconDetector.self) private var detector
+    @Environment(PieceDetector.self) private var detector
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
     @State private var showsTutorial = false
@@ -21,7 +21,7 @@ struct SearchView: View {
     /// さがすタブが画面に出ているか。`TabView` はほかのタブにいる間も View を残すので、自分で持つ
     @State private var isVisible = false
 
-    /// 今、探すべきか
+    /// 今、調べるべきか
     private var shouldScan: Bool {
         Self.shouldScan(
             isVisible: isVisible,
@@ -31,7 +31,7 @@ struct SearchView: View {
     }
 
     /// さがすタブが画面に出ていて、アプリがバックグラウンドでなく、
-    /// チュートリアルやゲット画面で覆われていないときだけ探す。
+    /// チュートリアルやゲット画面で覆われていないときだけ調べる。
     /// 覆われている間に検知すると、獲得を保存したのにゲット画面を出せないことがあるため
     nonisolated static func shouldScan(isVisible: Bool, scenePhase: ScenePhase, isCovered: Bool) -> Bool {
         isVisible && scenePhase != .background && !isCovered
@@ -73,7 +73,7 @@ struct SearchView: View {
                 GotPieceView(gotPiece: gotPiece)
             }
         }
-        .onChange(of: detector.detectedPiece) { _, detected in
+        .onChange(of: detector.detectedPieces) { _, detected in
             receive(detected)
         }
         .onAppear {
@@ -83,7 +83,7 @@ struct SearchView: View {
             isVisible = false
         }
         .onChange(of: shouldScan, initial: true) { _, scan in
-            // ほかのタブにいる間とバックグラウンドでは探さない。さがすタブに戻ってきたら探し直す
+            // ほかのタブにいる間とバックグラウンドでは調べない。さがすタブに戻ってきたら調べ直す
             if scan {
                 detector.start()
             } else {
@@ -91,17 +91,17 @@ struct SearchView: View {
             }
         }
         .tabItem {
-            Image(systemName: "magnifyingglass")
+            Image(.tabSearch)
             Text("さがす")
         }
     }
 
-    /// 検知したピースを受け取る。まだ獲得していなければ獲得を保存し、「ゲットした」画面を出す
-    private func receive(_ detected: Piece?) {
-        guard detected != nil else {
+    /// 範囲に入ったピース（近い順）を受け取る。まだ獲得していないいちばん近いピースの獲得を保存し、「ゲットした」画面を出す
+    private func receive(_ detected: [Piece]) {
+        guard !detected.isEmpty else {
             return
         }
-        detector.clearDetectedPiece()
+        detector.clearDetectedPieces()
         let collection = PieceCollection(context: modelContext)
         // チュートリアルやゲット画面を出している間は保存しない（ゲット画面を出せないため。閉じた後の検知でまた拾う）
         guard !showsTutorial,

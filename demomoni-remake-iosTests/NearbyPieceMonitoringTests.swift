@@ -11,11 +11,13 @@ import Testing
 /// 「アプリを閉じていても近くのピースを知らせる」の判定
 struct NearbyPieceMonitoringTests {
     private let catalog = Catalog.bundled
-    private let uuid = UUID(uuidString: "E8C65602-6D9C-44EF-9734-B2D3EF1CD961")!
 
-    /// 元町公園（beaconId 0）のビーコン
-    private var motomachi: DetectedBeacon {
-        DetectedBeacon(uuid: uuid, major: 0, minor: 5000)
+    /// 大沼公園の場所（函館の市街から 20 km ほど北）
+    private let onumaPark = Coordinate(latitude: 41.979, longitude: 140.669)
+
+    /// 範囲に入った出来事
+    private func insideEvent(pieceID: Int) throws -> RegionEvent {
+        RegionEvent(identifier: NearbyPieceMonitoring.identifier(for: try #require(catalog.piece(id: pieceID))), state: .inside)
     }
 
     /// スイッチがオンで、位置情報が「常に」・通知が許可されているときだけ見張る
@@ -33,98 +35,197 @@ struct NearbyPieceMonitoringTests {
         ))
     }
 
-    /// まだ獲得していないピースのビーコンが上限に収まれば、1 台ずつ見張る
+    /// まだ獲得していないピースが上限に収まれば、すべてのピースの場所を半径 100 m の円で見張る
     @Test
-    func conditionsPerBeaconWithinLimit() {
+    func conditionsForEveryPieceWithinLimit() throws {
         let collected = Set(catalog.pieces.map(\.id)).subtracting([0, 1])
-        let conditions = NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected)
+        let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: collected, near: nil)
         #expect(conditions == [
-            MonitoredBeacon(identifier: "beacon-\(uuid.uuidString)-0-5000", uuid: uuid, major: 0, minor: 5000),
-            MonitoredBeacon(identifier: "beacon-\(uuid.uuidString)-0-6000", uuid: uuid, major: 0, minor: 6000)
+            MonitoredRegion(
+                identifier: "area-0-41.765501-140.709514-100.000000",
+                center: Coordinate(latitude: 41.765501, longitude: 140.709514),
+                radius: 100
+            ),
+            MonitoredRegion(
+                identifier: "area-1-41.759430-140.704641-150.000000",
+                center: Coordinate(latitude: 41.759430, longitude: 140.704641),
+                radius: 150
+            )
         ])
     }
 
-    /// 上限ちょうどまでは 1 台ずつ見張る
+    /// 上限ちょうどまでは、今いる場所によらずすべてを見張る（選び直す円は要らない）
     @Test
-    func conditionsPerBeaconAtLimit() {
+    func conditionsForEveryPieceAtLimit() {
         let uncollected = Set(catalog.pieces.prefix(NearbyPieceMonitoring.conditionLimit).map(\.id))
         let collected = Set(catalog.pieces.map(\.id)).subtracting(uncollected)
-        let conditions = NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected)
+        let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: collected, near: onumaPark)
         #expect(conditions.count == NearbyPieceMonitoring.conditionLimit)
-        #expect(conditions.allSatisfy { $0.minor != nil })
+        #expect(conditions.allSatisfy { $0.identifier.hasPrefix("area-") })
     }
 
-    /// 上限を超えるとき（同梱の 32 台をまだ 1 つも獲得していないとき）は、UUID ごとにまとめて見張る
+    /// 上限を超えるとき（32 か所をまだ 1 つも獲得していないとき）は、今いる場所に近い 19 か所と、選び直す円を見張る。
+    /// 選び直す円は、選ばなかったピースの範囲に届かない
     @Test
-    func conditionsPerUUIDOverLimit() {
-        #expect(catalog.beacons.count > NearbyPieceMonitoring.conditionLimit)
-        let conditions = NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: [])
-        #expect(conditions == [MonitoredBeacon(identifier: "beacon-uuid-\(uuid.uuidString)", uuid: uuid, major: nil, minor: nil)])
+    func conditionsNearLocationOverLimit() throws {
+        let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: [], near: onumaPark)
+        #expect(conditions.count == NearbyPieceMonitoring.conditionLimit)
+
+        let areas = conditions.dropLast()
+        let monitoredIdentifiers = Set(areas.map(\.identifier))
+        let monitoredNames = catalog.pieces
+            .filter { monitoredIdentifiers.contains(NearbyPieceMonitoring.identifier(for: $0)) }
+            .map(\.name)
+        #expect(monitoredNames.count == NearbyPieceMonitoring.conditionLimit - 1)
+        // 大沼の 4 か所と、北斗のうち内陸の 3 か所は、大沼公園から近いので選ぶ（函館の市街は 20 km 以上離れている）
+        for name in ["大沼公園", "大沼国際交流プラザ", "東大沼キャンプ場", "じゅんさい沼", "新函館北斗駅", "きじひき高原", "北斗市総合文化センター"] {
+            #expect(monitoredNames.contains(name), "\(name) を見張る")
+        }
+
+        let boundary = try #require(conditions.last)
+        #expect(boundary.identifier.hasPrefix(NearbyPieceMonitoring.boundaryIdentifierPrefix))
+        #expect(boundary.center == onumaPark)
+        let unmonitored = catalog.pieces.filter { !monitoredNames.contains($0.name) }
+        #expect(unmonitored.count == catalog.pieces.count - NearbyPieceMonitoring.conditionLimit + 1)
+        for piece in unmonitored {
+            #expect(onumaPark.distance(to: piece.coordinate) >= boundary.radius + piece.radius, "\(piece.name) の範囲に届かない")
+        }
+        // 選ばなかったピースのうち、範囲の縁がいちばん近いものの縁の手前まで
+        let nearestUnmonitoredEdge = try #require(unmonitored.map { onumaPark.distance(to: $0.coordinate) - $0.radius }.min())
+        #expect(abs(boundary.radius - nearestUnmonitoredEdge) < 0.001)
+    }
+
+    /// 上限を超えるのに今いる場所が分からなければ、同梱データの順に上限まで見張る
+    @Test
+    func conditionsWithoutLocationOverLimit() {
+        let conditions = NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: [], near: nil)
+        let expected = catalog.pieces.prefix(NearbyPieceMonitoring.conditionLimit).map(NearbyPieceMonitoring.identifier(for:))
+        #expect(conditions.map(\.identifier) == expected)
+    }
+
+    /// 上限を超えるときは、中心ではなく範囲の縁が近い順に選ぶ（中心は遠くても範囲の広い場所を先に選ぶ）
+    @Test
+    func selectsByDistanceToEdge() {
+        let here = Coordinate(latitude: 41.7737, longitude: 140.7266)
+        /// `here` から北へ `meters` の場所のピース
+        func piece(_ id: Int, meters: Double, radius: Double) -> Piece {
+            Piece(
+                id: id,
+                name: "\(id)",
+                latitude: here.latitude + meters / 111_000,
+                longitude: here.longitude,
+                area: "",
+                image: "piece1",
+                radius: radius
+            )
+        }
+        // 縁までの距離は 0: 900 m・1: 800 m・2: 2900 m
+        let pieces = [piece(0, meters: 1_000, radius: 100), piece(1, meters: 1_500, radius: 700), piece(2, meters: 3_000, radius: 100)]
+        let conditions = NearbyPieceMonitoring.conditions(pieces: pieces, collectedPieceIDs: [], near: here, limit: 2)
+        #expect(conditions.first?.identifier == NearbyPieceMonitoring.identifier(for: pieces[1]))
+        #expect(conditions.first?.radius == 700)
+        let edge = here.distance(to: pieces[0].coordinate) - 100
+        #expect(conditions.last.map { abs($0.radius - edge) < 0.001 } == true)
+    }
+
+    /// 選び直す円は、選ばなかったピースが近くても 200 m より小さくしない
+    @Test
+    func boundaryHasMinimumRadius() throws {
+        let here = Coordinate(latitude: 41.7737, longitude: 140.7266)
+        let pieces = (0..<3).map {
+            Piece(id: $0, name: "\($0)", latitude: here.latitude, longitude: here.longitude, area: "", image: "piece1")
+        }
+        let conditions = NearbyPieceMonitoring.conditions(pieces: pieces, collectedPieceIDs: [], near: here, limit: 2)
+        #expect(conditions.map(\.identifier) == [
+            NearbyPieceMonitoring.identifier(for: pieces[0]),
+            NearbyPieceMonitoring.boundaryIdentifier(center: here, radius: NearbyPieceMonitoring.minimumBoundaryRadius)
+        ])
+        #expect(conditions.last?.radius == NearbyPieceMonitoring.minimumBoundaryRadius)
     }
 
     /// 全部獲得したら、何も見張らない
     @Test
     func noConditionsWhenAllCollected() {
         let allPieceIDs = Set(catalog.pieces.map(\.id))
-        let conditions = NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: allPieceIDs)
-        #expect(conditions.isEmpty)
+        #expect(NearbyPieceMonitoring.conditions(pieces: catalog.pieces, collectedPieceIDs: allPieceIDs, near: onumaPark).isEmpty)
     }
 
-    /// ビーコン 1 台の条件の identifier には UUID・major・minor が入り、そこからビーコンを読める
-    /// （同梱データの値が変わったら identifier も変わり、古い条件を外して足し直す）
+    /// 円の条件の identifier にはピースの id・緯度・経度・半径が入る
+    /// （同梱データの場所が変わったら identifier も変わり、古い条件を外して足し直す）。選び直す円は中心と半径が入る
     @Test
-    func readsBeaconFromIdentifier() throws {
-        let beacon = try #require(catalog.beacons.first { $0.beaconId == 14 })
-        let identifier = NearbyPieceMonitoring.identifier(for: beacon)
-        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: identifier) == DetectedBeacon(beacon))
-
-        let moved = Beacon(beaconId: 14, uuid: beacon.uuid, major: beacon.major, minor: beacon.minor + 1)
-        #expect(NearbyPieceMonitoring.identifier(for: moved) != identifier)
-
-        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: NearbyPieceMonitoring.identifier(uuid: uuid)) == nil)
-        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: "beacon-14") == nil)
-        #expect(NearbyPieceMonitoring.beacon(fromIdentifier: "other") == nil)
+    func identifiersIncludeCenterAndRadius() throws {
+        let piece = try #require(catalog.piece(id: 14))
+        #expect(NearbyPieceMonitoring.identifier(for: piece) == "area-14-41.765038-140.708921-80.000000")
+        let moved = Piece(id: 14, name: piece.name, latitude: 41.7645, longitude: piece.longitude, area: piece.area, image: piece.image)
+        #expect(NearbyPieceMonitoring.identifier(for: moved) != NearbyPieceMonitoring.identifier(for: piece))
+        let widened = Piece(
+            id: 14,
+            name: piece.name,
+            latitude: piece.latitude,
+            longitude: piece.longitude,
+            area: piece.area,
+            image: piece.image,
+            radius: 200
+        )
+        #expect(NearbyPieceMonitoring.identifier(for: widened) != NearbyPieceMonitoring.identifier(for: piece))
+        #expect(NearbyPieceMonitoring.boundaryIdentifier(center: onumaPark, radius: 1_234.5) == "boundary-41.979000-140.669000-1234.500000")
     }
 
-    /// ビーコン 1 台の条件の範囲に入ったら、そのピースを知らせる
+    /// ピースの場所の円に入ったら、そのピースを知らせる
     @Test
-    func notifiesPieceForBeaconCondition() {
-        let event = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-6000", isInside: true, beacon: nil)
-        let piece = NearbyPieceMonitoring.pieceToNotify(for: event, catalog: catalog, collectedPieceIDs: [], isAppActive: false)
+    func notifiesPieceForArea() throws {
+        let piece = NearbyPieceMonitoring.pieceToNotify(
+            for: try insideEvent(pieceID: 1),
+            catalog: catalog,
+            collectedPieceIDs: [],
+            isAppActive: false
+        )
         #expect(piece?.name == "函館山")
     }
 
-    /// UUID ごとの条件では、`refinement` のビーコンのピースを知らせる。どのビーコンか分からなければ知らせない
+    /// 獲得済みのピース・円から出たとき・状態が分からないとき・アプリが前面のときは知らせない。
+    /// 同梱データの今の場所でない条件（前の版のビーコンの条件・場所を変える前の条件）・選び直す円でも知らせない
     @Test
-    func notifiesPieceForRefinement() {
-        let identifier = NearbyPieceMonitoring.identifier(uuid: uuid)
-        let refined = BeaconRegionEvent(identifier: identifier, isInside: true, beacon: motomachi)
-        let piece = NearbyPieceMonitoring.pieceToNotify(for: refined, catalog: catalog, collectedPieceIDs: [], isAppActive: false)
-        #expect(piece?.name == "元町公園")
-
-        let unknown = BeaconRegionEvent(identifier: identifier, isInside: true, beacon: nil)
-        #expect(NearbyPieceMonitoring.pieceToNotify(for: unknown, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
-    }
-
-    /// 獲得済みのピース・範囲から出たとき・アプリが前面のとき・同梱データに無いビーコンでは知らせない
-    @Test
-    func doesNotNotify() {
-        let inside = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-5000", isInside: true, beacon: nil)
+    func doesNotNotify() throws {
+        let inside = try insideEvent(pieceID: 0)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: inside, catalog: catalog, collectedPieceIDs: [0], isAppActive: false) == nil)
         #expect(NearbyPieceMonitoring.pieceToNotify(for: inside, catalog: catalog, collectedPieceIDs: [], isAppActive: true) == nil)
 
-        let outside = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-5000", isInside: false, beacon: nil)
-        #expect(NearbyPieceMonitoring.pieceToNotify(for: outside, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
+        for state in [RegionEvent.State.outside, .unknown] {
+            let event = RegionEvent(identifier: inside.identifier, state: state)
+            #expect(NearbyPieceMonitoring.pieceToNotify(for: event, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
+        }
 
-        let unknownBeacon = BeaconRegionEvent(identifier: "beacon-\(uuid.uuidString)-0-4000", isInside: true, beacon: nil)
-        #expect(NearbyPieceMonitoring.pieceToNotify(for: unknownBeacon, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
+        for identifier in [
+            "beacon-E8C65602-6D9C-44EF-9734-B2D3EF1CD961-0-5000",
+            "area-0-41.000000-140.000000-100.000000",
+            NearbyPieceMonitoring.boundaryIdentifier(center: onumaPark, radius: 500)
+        ] {
+            let event = RegionEvent(identifier: identifier, state: .inside)
+            #expect(NearbyPieceMonitoring.pieceToNotify(for: event, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
+        }
+    }
 
-        let notInCatalog = BeaconRegionEvent(
-            identifier: NearbyPieceMonitoring.identifier(uuid: uuid),
-            isInside: true,
-            beacon: DetectedBeacon(uuid: uuid, major: 0, minor: 4000)
-        )
-        #expect(NearbyPieceMonitoring.pieceToNotify(for: notInCatalog, catalog: catalog, collectedPieceIDs: [], isAppActive: false) == nil)
+    /// 選び直す円から出たときだけ選び直す（入った・分からない・ピースの円から出たときは選び直さない）
+    @Test
+    func reselectsOnlyWhenLeavingBoundary() throws {
+        let boundary = NearbyPieceMonitoring.boundaryIdentifier(center: onumaPark, radius: 500)
+        #expect(NearbyPieceMonitoring.needsReselection(after: RegionEvent(identifier: boundary, state: .outside)))
+        #expect(!NearbyPieceMonitoring.needsReselection(after: RegionEvent(identifier: boundary, state: .inside)))
+        #expect(!NearbyPieceMonitoring.needsReselection(after: RegionEvent(identifier: boundary, state: .unknown)))
+        let area = try insideEvent(pieceID: 0).identifier
+        #expect(!NearbyPieceMonitoring.needsReselection(after: RegionEvent(identifier: area, state: .outside)))
+    }
+
+    /// CLMonitor の条件の状態を、入った・出た・分からないに直す
+    @Test(arguments: [
+        (CLMonitor.Event.State.satisfied, RegionEvent.State.inside),
+        (.unsatisfied, .outside),
+        (.unknown, .unknown),
+        (.unmonitored, .unknown)
+    ])
+    func mapsMonitorState(state: CLMonitor.Event.State, expected: RegionEvent.State) {
+        #expect(RegionEvent.State(state) == expected)
     }
 
     /// 通知の identifier はピースごと（同じピースの通知を重ねない）。獲得はさがすタブで行うので、さがすタブへ案内する

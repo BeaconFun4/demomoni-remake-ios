@@ -9,8 +9,8 @@ import Foundation
 nonisolated struct LaunchOptions: Equatable, Sendable {
     /// `-uiTesting`: 獲得状態を端末に保存せず、メモリ上の空のストアで起動する
     var usesInMemoryStore = false
-    /// `-fakeBeaconID <id>`: CoreLocation の代わりに、その beaconId のビーコンを数秒後に見つけたことにする（擬似検知）
-    var fakeBeaconID: Int?
+    /// `-fakePieceID <id>`: CoreLocation の代わりに、数秒後にその id のピースの場所にいることにする（擬似検知）
+    var fakePieceID: Int?
     /// 実際の位置情報（CoreLocation）で探すか。`-uiTesting` と Unit テストのホストでは使わない
     /// （位置情報の許可のダイアログがテストの画面を塞がないようにする）
     var usesLocationServices = true
@@ -22,12 +22,12 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
 
     init(
         usesInMemoryStore: Bool = false,
-        fakeBeaconID: Int? = nil,
+        fakePieceID: Int? = nil,
         usesLocationServices: Bool = true,
         collectedPieceIDs: [Int] = []
     ) {
         self.usesInMemoryStore = usesInMemoryStore
-        self.fakeBeaconID = fakeBeaconID
+        self.fakePieceID = fakePieceID
         self.usesLocationServices = usesLocationServices
         self.collectedPieceIDs = collectedPieceIDs
     }
@@ -38,8 +38,8 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
         usesInMemoryStore = isUITesting
         // Unit テストはアプリをホストにして動くので、XCTest が渡す環境変数で見分ける
         usesLocationServices = !isUITesting && environment["XCTestConfigurationFilePath"] == nil
-        if let index = arguments.firstIndex(of: "-fakeBeaconID"), arguments.indices.contains(index + 1) {
-            fakeBeaconID = Int(arguments[index + 1])
+        if let index = arguments.firstIndex(of: "-fakePieceID"), arguments.indices.contains(index + 1) {
+            fakePieceID = Int(arguments[index + 1])
         }
         if let index = arguments.firstIndex(of: "-collectedPieceIDs"), arguments.indices.contains(index + 1) {
             collectedPieceIDs = arguments[index + 1].split(separator: ",").compactMap { Int($0) }

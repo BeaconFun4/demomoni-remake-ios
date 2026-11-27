@@ -32,8 +32,8 @@ INFOPLIST_KEY_CFBundleDisplayName = でももに！
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait
 INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
 
-// 位置情報（使用中の許可）の利用目的。さがすタブで近くの iBeacon を見つけるために使う
-INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = 近くのビーコンを見つけて、ピースをゲットするために使います
+// 位置情報（使用中の許可）の利用目的。さがすタブで、今いる場所がピースの場所の近くかを調べるために使う
+INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = ピースの場所の近くに来たことを調べて、ピースをゲットするために使います
 
 // 位置情報（常に許可）の利用目的。せっていタブでオンにした人だけ、アプリを閉じていても近くのピースを通知で知らせるために使う
 INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = アプリを閉じていても、近くにピースがあることを知らせるために使います

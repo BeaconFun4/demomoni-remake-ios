@@ -9,7 +9,7 @@ import Foundation
 nonisolated struct NearbyAlertPermissionStatus: Equatable, Sendable {
     /// 位置情報が「常に」か
     var isLocationAlways: Bool
-    /// 正確な位置情報がオンか（オフだと iBeacon を見張れない）
+    /// 正確な位置情報がオンか（オフだとピースの場所の範囲を見張れない）
     var hasFullAccuracy: Bool
     /// 通知が許可されているか
     var areNotificationsAllowed: Bool
