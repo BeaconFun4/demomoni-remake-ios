@@ -92,20 +92,29 @@ struct CatalogTests {
         #expect(piece.longitude == 140.709514)
     }
 
-    /// なぞなぞのタイトル・問題文・ヒント・答え・ピースを読む。元アプリの 2 問は文言を変えず、先頭に置く
+    /// なぞなぞのタイトル・問題文・ヒント・答え・ピースを読む（文言は変わるので、答えとピースの対応で確かめる）
     @Test
     func decodesRiddles() throws {
         let catalog = try Catalog.load()
-        #expect(catalog.riddles.prefix(2).map(\.title) == ["函館ののっぽ", "函館の見晴らし台"])
         let first = try #require(catalog.riddles.first)
-        #expect(first.content == "函館の白くて高いものといえば？")
+        #expect(!first.title.isEmpty)
+        #expect(!first.content.isEmpty)
         #expect(first.hint == "五◯郭タワー")
         #expect(first.answer == "五稜郭タワー")
         #expect(catalog.piece(for: first)?.name == "五稜郭タワー")
         let second = catalog.riddles[1]
-        #expect(second.content == "函館で夜景が綺麗な有名なところといえば？")
-        #expect(second.hint == "函◯山")
+        #expect(second.answer == "函館山")
         #expect(catalog.piece(for: second)?.id == 1)
+    }
+
+    /// タイトル（一覧で解く前から見える）と問題文に、答えをそのまま書かない
+    @Test
+    func riddlesDoNotRevealAnswers() throws {
+        let catalog = try Catalog.load()
+        for riddle in catalog.riddles {
+            #expect(!riddle.title.contains(riddle.answer), "なぞなぞ \(riddle.id) のタイトル: \(riddle.title)")
+            #expect(!riddle.content.contains(riddle.answer), "なぞなぞ \(riddle.id) の問題文")
+        }
     }
 
     /// なぞなぞとピースは 1 対 1。pieceId はすべて実在するピースを指し、id とタイトルは重複しない

@@ -68,6 +68,12 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 データと状態:
 
 - `Catalog/` … 同梱データ（`Resources/Data/` の `pieces.json`・`riddles.json`。ピースは 32 件（函館 24・大沼 4・北斗 4。場所は緯度・経度 = `Piece.coordinate` と範囲の半径 `radius`（メートル。無ければ `Piece.defaultRadius` = 100）。緯度・経度は OpenStreetMap・Wikidata・国土地理院で確かめた位置で、広い場所は訪れた人が行く地点を中心にする）、なぞなぞも 32 件）。`Catalog.bundled` を `EnvironmentValues.catalog` で渡す。なぞなぞとピースは `Riddle.pieceId` = `Piece.id` で 1 対 1（答え = ピースの場所の名前。ヒントは答えの 1 文字を「◯」で伏せたもの）、ピースの番号は画像の名前の数字（`piece14` → No.14 = 盤の左上から行ごとに 14 番目のマス）
+- なぞなぞの文（`riddles.json` の `title`・`content`・`hint`）は、12 歳ぐらいの子どもが読んで分かり、答えを知ったときに「なるほど！」と思えるように作っている（#186。元アプリの文言は引き継いでいない）。直すときは次を守る
+  - 問題文では「なぞ・ひねり」を出すだけにして、種明かしを書ききらない。答えの名前（字・読み・由来）やその場所の事実を見たときに解けるようにする（例: 「トリはもう 1 わ、名前の中にもかくれているよ」→ カ「トリ」ック元町教会）。特徴を並べただけのクイズにしない。たまたま字が並んでいるだけの隠し言葉は、場所とつながらなければ使わない
+  - タイトルは一覧で解く前から見えるので、答え・あだ名・名物をそのまま書かない（`CatalogTests.riddlesDoNotRevealAnswers` で、タイトルと問題文に答えをそのまま書いていないことを確かめる）
+  - ヒントで伏せる 1 文字は、問題文が指している「鍵の字」にする（子どもが自分で埋めて気づけるように）
+  - 問題文に入れる事実（名前の由来・建物の特徴）は Web で確かめたものだけにする。説が分かれるものは「〜といわれる」にする。由来を確かめられない名前に、由来めいたことを書かない
+  - 直したら、書いた人とは別のエージェントに「わかりやすさ」「なるほど！感」の 2 軸・4 段階（◎・⚪︎・△・×）で評価してもらう。評価者によって同じ文でも ◎ と ⚪︎ が入れ替わるので、直しながら評価するときは評価者を替えない
 - ピースの画像（`Assets.xcassets/Pieces/`）は盤の 32 マスぶん（`piece1`〜`piece32`。400 × 400 の中央の 200 × 200 がマス）。`piece1`・`piece14` は元アプリのもの、残りの 30 枚は `scripts/make-piece-images.swift` で `goryokaku_long` を `PieceAllBorder` の形に切り出したもの（既にある画像は上書きしない）
 - `Collection/` … 獲得状態。SwiftData の `CollectedPiece`（ピースの id・最初に獲得した日時・サインの `PKDrawing` のデータ）を 1 ピース 1 件。書き込み（獲得・まとめて獲得・サイン・1 ピースを外す・全部消す）は `PieceCollection` だけで行う（二重の獲得をしない・保存に失敗したら rollback）
 - `Detection/` … ピースの場所の範囲に入ったかの検知（さがすタブを表示している間だけ）。`PieceDetector`（`@Observable`）が `LocationScanner` を包む。実機は `CoreLocationScanner`（`startUpdatingLocation()`。使用中の許可・正確な位置情報が要る）、テストは `FakeLocationScanner`

@@ -11,7 +11,7 @@ nonisolated struct Riddle: Decodable, Hashable, Identifiable, Sendable {
     let id: Int
     /// 答えの場所にあるピースの `Piece.id`（なぞなぞを解く → その場所へ行く → ピースを獲得する）
     let pieceId: Int
-    /// 一覧に出すタイトル（例: 函館ののっぽ）
+    /// 一覧に出すタイトル（例: 昼間の星）。解く前から見えるので、答えを書かない
     let title: String
     /// 問題文
     let content: String
