@@ -40,3 +40,6 @@ INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = アプリを閉じ�
 
 // 輸出コンプライアンスの申告（Info.plist の ITSAppUsesNonExemptEncryption）。免除対象外の暗号を使わないので NO。暗号を入れるときは見直す
 INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO
+
+// カメラの利用目的。ピース詳細でピースをうらがえし、裏側に入れる写真を撮るときだけ使う（写真ライブラリは PhotosPicker なので許可が要らない）
+INFOPLIST_KEY_NSCameraUsageDescription = ピースの裏側に入れる、その場所の写真を撮るために使います

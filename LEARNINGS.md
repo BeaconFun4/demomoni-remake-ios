@@ -50,3 +50,9 @@
 - `icon.json` の背景の塗りは `"fill" : { "solid" : "srgb:<r>,<g>,<b>,1.00000" }`（0〜1 の小数 5 桁）。`scripts/make-app-icon-layers.swift` が元の絵の水色をこの形で表示する（2026-10-22）
 - タブの画像（`.tabItem` の `Image`）は、画像の大きさ（pt）で出る。30 pt 四方の PDF（図を四方いっぱいに描く）で、iPhone の下のタブバーの SF Symbols とほぼ同じ大きさになった。iPad（iOS 26・縦向き）の上のタブバーはラベルだけを出し、アイコンを出さない（`scripts/make-tab-icons.swift`）（2026-11-26）
 - `CGContext` で書いた PDF には作成日時・更新日時（`D:` の 14 桁）と `/ID` が入り、同じ図でも書き出すたびに中身が変わる。相互参照表の位置がずれないよう、同じ長さの固定の値に置き換えると、図を変えない限り差分が出ない（`scripts/make-tab-icons.swift`）（2026-11-26）
+
+## ピースの裏側の写真
+
+- `CollectedPiece` に任意の値（`photo`・`photoDrawing`）を足すだけなら、`VersionedSchema` を書かなくても SwiftData の軽量の移行で前の版のストアを開ける。確かめるテストは、テストのターゲットに前の版の `@Model final class CollectedPiece` を `enum` の中に入れて書く（エンティティの名前は入れ子でもクラスの名前だけになるので、同じストアの記録として読める。`CollectedPieceMigrationTests`）（2026-11-26）
+- `SWIFT_APPROACHABLE_CONCURRENCY = YES` なので、`nonisolated async` の関数は呼んだ側の actor（View なら MainActor）で動く。写真を縮めるなどの重い処理を MainActor の外で行うには `@concurrent` を付ける（2026-11-26）
+- iOS 26 の Simulator では `UIImagePickerController.isSourceTypeAvailable(.camera)` が `true` になり、「しゃしんをとる」が出る。UI テストで「カメラの無い端末」を前提にしない（2026-11-26）

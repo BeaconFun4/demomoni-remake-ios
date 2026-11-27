@@ -26,14 +26,20 @@ final class SignatureCanvasController {
     @ObservationIgnored private var side: CGFloat?
     /// 最初に置く、保存してあったサイン（保存する座標のまま）
     @ObservationIgnored private var initialDrawing: PKDrawing?
+    /// キャンバスに出している、保存する座標の範囲。キャンバスの 1 辺がこの範囲の 1 辺に当たる
+    @ObservationIgnored private let visibleRect: CGRect
 
-    /// - Parameter signature: 保存してあったサインのデータ。描き足せるように最初に置く
-    init(signature: Data?) {
+    /// - Parameters:
+    ///   - signature: 保存してあったサイン（写真の上の手書きにも使う）のデータ。描き足せるように最初に置く
+    ///   - accessibilityLabel: 描くところの読み上げ
+    ///   - visibleRect: キャンバスに出す、保存する座標の範囲。既定は 400 × 400 の全体（ピースの裏側は、ピースが入るまんなかだけを大きく出す）
+    init(signature: Data?, accessibilityLabel: String = "サインをかくところ", visibleRect: CGRect = SignatureDrawing.fullRect) {
+        self.visibleRect = visibleRect
         initialDrawing = signature.flatMap { try? PKDrawing(data: $0) }
         canvasView.drawingPolicy = .anyInput
         canvasView.backgroundColor = .clear
         canvasView.isOpaque = false
-        canvasView.accessibilityLabel = "サインをかくところ"
+        canvasView.accessibilityLabel = accessibilityLabel
         canvasView.overrideUserInterfaceStyle = .light
         select(.pen)
     }
@@ -47,12 +53,13 @@ final class SignatureCanvasController {
             // 回転などで大きさが変わったら、描いたものも同じ割合で拡大・縮小する。
             // 取り消しの記録は前の大きさの座標のままなので、戻すと位置がずれる。記録を消す
             canvasView.drawing = SignatureDrawing.denormalized(
-                SignatureDrawing.normalized(canvasView.drawing, fromSide: side),
-                toSide: newSide
+                SignatureDrawing.normalized(canvasView.drawing, fromSide: side, visibleRect: visibleRect),
+                toSide: newSide,
+                visibleRect: visibleRect
             )
             canvasView.undoManager?.removeAllActions()
         } else if let initialDrawing {
-            canvasView.drawing = SignatureDrawing.denormalized(initialDrawing, toSide: newSide)
+            canvasView.drawing = SignatureDrawing.denormalized(initialDrawing, toSide: newSide, visibleRect: visibleRect)
         }
         side = newSide
     }
@@ -87,7 +94,9 @@ final class SignatureCanvasController {
         guard !canvasView.drawing.strokes.isEmpty else {
             return nil
         }
-        let drawing = side.map { SignatureDrawing.normalized(canvasView.drawing, fromSide: $0) } ?? canvasView.drawing
+        let drawing = side.map {
+            SignatureDrawing.normalized(canvasView.drawing, fromSide: $0, visibleRect: visibleRect)
+        } ?? canvasView.drawing
         return drawing.dataRepresentation()
     }
 }

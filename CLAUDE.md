@@ -58,6 +58,8 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - `Search/` … さがす（歩くうさぎ・チュートリアル・位置情報の案内）。表示している間だけ位置情報で今いる場所を調べ、未獲得のピースの場所の範囲（ピースごとの半径）に入ったら保存して「ピースをゲットしたよ！！」を出す（範囲が重なるときは近いものから 1 つずつ。`PieceAcquisition`）
     - 歩くうさぎ（`SearchView.walkingRabbit`）の景色は SF Symbols。重なり順は 空の雲（`cloud.fill`）→ 遠くの建物（`building.2.fill`）→ 道の画像（`road` = `way.png`）→ 街路樹（`tree.fill`）→ うさぎの GIF（`tekuusa`）。雲と建物は道の画像の `background`、木は `overlay` に `StreetSceneryView` で置く。景色はうさぎの後ろへ（手前から奥へ）遠ざかり、奥で消えたら手前から出てくる。並び（位置・大きさ・不透明度）は `StreetScenery`（道の画像に対する割合の座標）が層（`Layer`。`trees`・`buildings`・`clouds`）ごとに遠近法で計算し、遠くの層ほど遠くに置いてゆっくり動かす（視差）。速さ・数・間隔・大きさ・向きは `StreetScenery` の定数、色は `StreetSceneryView` の定数。Reduce Motion では止まった並びを出し、VoiceOver には読ませない（ラベルは「道を歩くうさぎ」のまま）
   - `PieceList/` … いちらん（五稜郭の 4 × 8 の盤に獲得したピースを置く）→ `PieceDetail/`（ピース詳細）→ `Sign/`（PencilKit でサイン）
+    - ピース詳細で「うらがえす」（ピースを押しても同じ）と裏側が出る（`PieceFlipCard`。縦の軸で回す。Reduce Motion ではフェード）。裏側（`PieceBackSide`）にはその場所で撮った写真を入れ、写真の上に手書きできる（`PiecePhoto/`）。
+      操作は `PiecePhotoActions`: 写真が無ければ「しゃしんをとる」（`CameraPicker`。`UIImagePickerController.isSourceTypeAvailable(.camera)` のときだけ）・「しゃしんをえらぶ」（`photosPicker`。許可は要らない）、あれば「かきこむ！」（`PhotoDrawingView`。PencilKit のツールピッカー）・「しゃしんをかえる」・「しゃしんをけす」（alert で確かめる）。手書きがあるときに写真を替えると手書きが消えるので、替える前に確かめる
     - 盤のすぐ上に、ゲットした数と同梱の全ピースの数を言葉を付けずに「3 / 32」の形で出す（`PieceCount`。同梱に無い id・重なった id は数えない。読み上げは「ゲットしたピース 3 こ、全部で 32 こ」）
     - ピース詳細の場所の下に、MapKit の小さな地図（`PieceLocationMap`。`pieces.json` の緯度・経度にピン）を出す。詳細のスクロールの邪魔をしないよう地図は動かせず（`interactionModes: []`・`allowsHitTesting(false)`）、押すと動かせる大きな地図のシート（`PieceMapSheet`）を開き、「マップでひらく」で Apple のマップに渡す（`MKMapItem(location:address:)`）。今いる場所は出さない（位置情報の許可を尋ねない）。範囲・読み上げ（「函館山の地図」）は `PieceMapLocation`
   - `Settings/` … せってい（「おしらせ」の「アプリを閉じていても、近くのピースを知らせる」スイッチ・アプリのバージョン・ニコモジ+ のライセンスの本文）。足りない許可の案内（`NearbyAlertPermissionStatus.message`）は Section の footer に出す。App Store 版でも空にならない項目を置く（デバッグ用の項目は `#if DEBUG` の中に置く）。Debug 構成だけ `Settings/DebugMode/` のデバッグモード（ピースを 1 つずつ埋める・外す・全部埋める・全部リセット・ピースを選んで擬似検知）への入口がある。擬似検知は `PieceDetector.injectDetection(pieceID:)` で入れてから、`EnvironmentValues.showSearchTab`（`TabSelection` を切り替える）でさがすタブに切り替える（さがすタブが調べ始めたときに届き、保存して「ゲットした」画面を出す）
@@ -86,6 +88,13 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - `PieceNotificationResponder`（`UNUserNotificationCenterDelegate`）: 近くのピースの通知を開いたら `TabSelection` をさがすタブにする（開くタブは `AppTab.forNotification` で決める）
   - Info.plist の「常に許可」の利用目的は `Configs/Project.xcconfig` の `INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription`。`UIBackgroundModes` は入れない（「常に許可」があれば `CLMonitor` の出来事でバックグラウンドに起こされる）
 - サインはピースの画像と同じ 400 × 400 の座標に直して保存する（`SignatureDrawing`）
+- ピースの裏側の写真と手書きは `CollectedPiece` の `photo`・`photoDrawing`（どちらも任意の値で `.externalStorage`。前の版のストアは軽量の移行で開ける。`CollectedPieceMigrationTests`）。書き込みは `PieceCollection` の `savePhoto`（手書きを消す）・`savePhotoDrawing`（写真が無ければ保存しない）・`removePhoto`
+  - 写真は保存の前に `PiecePhotoImage` で長い辺を 2048 px までに縮め、向きを画素に焼き込んだ JPEG に書き直す（位置情報などのメタデータを残さない。透明なところは白）。重いので `@concurrent` の関数で MainActor の外で行う（`SWIFT_APPROACHABLE_CONCURRENCY = YES` なので、ただの `nonisolated async` だと呼んだ側の actor で動く）
+  - 裏側（`PieceBackSurface`）は、表のピースの画像を左右反転した形（`PieceBackSilhouette`）で、白い裏地・写真・手書きをまとめて切り抜く（形の外に出さない）。手書きの画面（`PhotoDrawingView`）も同じ形・同じ範囲で、キャンバスも形で切り抜く
+  - 裏側は画面の幅いっぱい（`PieceBackLayout.backSide`。上限 560）に大きく出し、表は今までの大きさ（`frontSide`）に縮めて同じ置き場所に置く。回しながら表の大きさから裏の大きさへ動かす（`PieceFlip.scale`）。
+    出すのはピースの画像（400 × 400）のうち、どのピースも収まる `PieceBackLayout.visibleRect`（60〜340。32 枚とも収まることを `PieceBackLayoutTests` で確かめる）。写真の無いときの案内は、どのピースでも内側になる `innerRect`（140〜260）の中に出す
+  - 手書きはサインと同じ 400 × 400 の座標で保存する。キャンバスには `visibleRect` の部分だけを出すので、`SignatureCanvasController(visibleRect:)`・`SignatureDrawing.normalized(_:fromSide:visibleRect:)` で範囲に合わせて直す
+  - カメラの利用目的は `Configs/Project.xcconfig` の `INFOPLIST_KEY_NSCameraUsageDescription`
 - 文字はニコモジ+（`Resources/Fonts/`。SIL OFL 1.1）を起動時に登録し、`Font.demomoni(size:relativeTo:)` で Dynamic Type に追従させる。うずらフォント（`uzura.ttf`）は規約で再配布が禁止なので入れない。人物の写った画像（`piece14_family`・`notsign_piece`）も入れない
 
 起動引数（`LaunchOptions` の 1 か所で読む。UI テストと PR のスクリーンショットの撮影で使う）:
@@ -95,6 +104,7 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
 | `-uiTesting` | メモリ上の空のストアで起動し、実際の位置情報を使わない（許可のダイアログを出さない） |
 | `-fakePieceID <id>` | 調べ始めて 2 秒後に、その id のピースの場所に 1 回いることにする（擬似検知。範囲が重なるピースもある。UI テストはほかと重ならない函館山 = 1 を使う） |
 | `-collectedPieceIDs <id>,<id>` | `-uiTesting` のときだけ、そのピースを獲得済みにして起動する |
+| `-samplePhotoPieceIDs <id>,<id>` | `-uiTesting` のときだけ、獲得済みのそのピースの裏側に見本の写真（`SamplePhoto`。描いた絵）を入れて起動する |
 
 - Unit テストのホストとして起動したとき（環境変数 `XCTestConfigurationFilePath` がある）も、実際の位置情報は使わない（`CLServiceSession`・`CLMonitor` を作らず、通知の許可も尋ねない）
 - `-uiTesting` では、せっていタブのスイッチをオンにしても本物の許可を尋ねず、許可が無いものとして案内を出す

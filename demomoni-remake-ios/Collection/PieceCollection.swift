@@ -6,7 +6,7 @@
 import Foundation
 import SwiftData
 
-/// ピースの獲得状態とサインを、SwiftData の `ModelContext` に読み書きする
+/// ピースの獲得状態・サイン・裏側の写真と手書きを、SwiftData の `ModelContext` に読み書きする
 struct PieceCollection {
     let context: ModelContext
 
@@ -23,7 +23,7 @@ struct PieceCollection {
         return true
     }
 
-    /// まだ獲得していないピースをまとめて獲得済みにする（獲得済みのピースは日時・サインを残す）。
+    /// まだ獲得していないピースをまとめて獲得済みにする（獲得済みのピースは日時・サイン・写真を残す）。
     /// 1 回だけ保存するので、保存に失敗したら 1 件も獲得しない
     /// - Returns: 今回はじめて獲得した件数
     @discardableResult
@@ -68,7 +68,46 @@ struct PieceCollection {
         return true
     }
 
-    /// 獲得済みのピースの、最初に獲得した日時を置き換える（サインは残す）
+    /// 裏側の写真を保存する（前の写真は置き換える）。写真の上の手書きは前の写真に描いたものなので消す
+    /// - Parameter photo: `PiecePhotoImage` で縮めてメタデータを消した JPEG
+    /// - Returns: 保存できたか。獲得していないピースには保存しない
+    @discardableResult
+    func savePhoto(_ photo: Data, pieceID: Int) throws -> Bool {
+        guard let record = try record(pieceID: pieceID) else {
+            return false
+        }
+        record.photo = photo
+        record.photoDrawing = nil
+        try saveOrRollback()
+        return true
+    }
+
+    /// 写真の上の手書きを保存する（前の手書きは置き換える）。`nil` なら手書きを消す
+    /// - Returns: 保存できたか。獲得していない・写真を入れていないピースには保存しない
+    @discardableResult
+    func savePhotoDrawing(_ drawing: Data?, pieceID: Int) throws -> Bool {
+        guard let record = try record(pieceID: pieceID), record.photo != nil else {
+            return false
+        }
+        record.photoDrawing = drawing
+        try saveOrRollback()
+        return true
+    }
+
+    /// 裏側の写真と、その上の手書きを消す（獲得の記録・サインは残す）
+    /// - Returns: 消したか。獲得していない・写真を入れていなければ何もしない
+    @discardableResult
+    func removePhoto(pieceID: Int) throws -> Bool {
+        guard let record = try record(pieceID: pieceID), record.photo != nil else {
+            return false
+        }
+        record.photo = nil
+        record.photoDrawing = nil
+        try saveOrRollback()
+        return true
+    }
+
+    /// 獲得済みのピースの、最初に獲得した日時を置き換える（サイン・写真は残す）
     /// - Returns: 保存できたか。獲得していないピースには何もしない（記録も作らない）
     @discardableResult
     func updateCollectedAt(_ date: Date, pieceID: Int) throws -> Bool {
@@ -80,7 +119,7 @@ struct PieceCollection {
         return true
     }
 
-    /// ピースの獲得の記録（最初に獲得した日時・サイン）を消し、獲得していない状態に戻す
+    /// ピースの獲得の記録（最初に獲得した日時・サイン・写真・手書き）を消し、獲得していない状態に戻す
     /// - Returns: 消したか。獲得していなければ何もしない
     @discardableResult
     func remove(pieceID: Int) throws -> Bool {

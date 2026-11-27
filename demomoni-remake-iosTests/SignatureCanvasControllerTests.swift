@@ -90,4 +90,31 @@ struct SignatureCanvasControllerTests {
         #expect(controller.tool == .eraser)
         #expect(controller.canvasView.tool is PKEraserTool)
     }
+
+    /// 描くところの読み上げは、サインと写真の上の手書きで分ける。写真の上の手書きも、サインと同じ座標で保存する
+    @Test
+    func usesAccessibilityLabelAndSameCoordinatesForPhotoDrawing() {
+        #expect(SignatureCanvasController(signature: nil).canvasView.accessibilityLabel == "サインをかくところ")
+        let controller = SignatureCanvasController(signature: savedSignature, accessibilityLabel: "しゃしんにかきこむところ")
+        #expect(controller.canvasView.accessibilityLabel == "しゃしんにかきこむところ")
+        controller.layout(side: 300)
+        let data = controller.signatureData()
+        let drawing = data.flatMap { try? PKDrawing(data: $0) }
+        #expect(abs((drawing?.bounds.midX ?? 0) - 200) < 1)
+    }
+
+    /// ピースの裏側のように 400 × 400 の一部だけを出すときは、保存してあった手書きをその範囲に合わせて置き、保存し直しても同じ座標になる
+    @Test
+    func placesDrawingWithinVisibleRect() throws {
+        let controller = SignatureCanvasController(signature: savedSignature, visibleRect: PieceBackLayout.visibleRect)
+        // (100, 100)〜(300, 300) の線は、60〜340 を 1 辺 280 で出すと (40, 40)〜(240, 240)
+        controller.layout(side: 280)
+        #expect(abs(controller.canvasView.drawing.bounds.midX - 140) < 1)
+
+        controller.layout(side: 560)
+        #expect(abs(controller.canvasView.drawing.bounds.midX - 280) < 1)
+        let saved = try PKDrawing(data: try #require(controller.signatureData()))
+        #expect(abs(saved.bounds.midX - 200) < 1)
+        #expect(abs(saved.bounds.midY - 200) < 1)
+    }
 }

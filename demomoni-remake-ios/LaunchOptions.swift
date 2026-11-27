@@ -16,6 +16,9 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
     var usesLocationServices = true
     /// `-collectedPieceIDs <id>,<id>`: メモリ上のストアで、そのピースを獲得済みにして起動する（`-uiTesting` と一緒に使う）
     var collectedPieceIDs: [Int] = []
+    /// `-samplePhotoPieceIDs <id>,<id>`: メモリ上のストアで、獲得済みのそのピースの裏側に見本の写真（`SamplePhoto`）を入れて起動する
+    /// （`-uiTesting`・`-collectedPieceIDs` と一緒に使う）
+    var samplePhotoPieceIDs: [Int] = []
 
     init(
         usesInMemoryStore: Bool = false,
@@ -40,6 +43,9 @@ nonisolated struct LaunchOptions: Equatable, Sendable {
         }
         if let index = arguments.firstIndex(of: "-collectedPieceIDs"), arguments.indices.contains(index + 1) {
             collectedPieceIDs = arguments[index + 1].split(separator: ",").compactMap { Int($0) }
+        }
+        if let index = arguments.firstIndex(of: "-samplePhotoPieceIDs"), arguments.indices.contains(index + 1) {
+            samplePhotoPieceIDs = arguments[index + 1].split(separator: ",").compactMap { Int($0) }
         }
     }
 

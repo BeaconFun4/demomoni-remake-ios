@@ -36,6 +36,11 @@ struct DemomoniApp: App {
                 for pieceID in options.collectedPieceIDs {
                     try collection.collect(pieceID: pieceID, at: .now)
                 }
+                if !options.samplePhotoPieceIDs.isEmpty, let photo = SamplePhoto.jpegData() {
+                    for pieceID in options.samplePhotoPieceIDs {
+                        try collection.savePhoto(photo, pieceID: pieceID)
+                    }
+                }
             }
         } catch {
             fatalError("獲得状態のストアを開けない: \(error)")
