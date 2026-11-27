@@ -84,7 +84,7 @@ struct PieceListView: View {
             #endif
         }
         .tabItem {
-            Image(systemName: "puzzlepiece.extension")
+            Image(.tabPieceList)
             Text("いちらん")
         }
     }

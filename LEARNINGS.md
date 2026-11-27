@@ -48,3 +48,5 @@
 - `AppIcon.icon` を `demomoni-remake-ios/` の下に置くと、`APP_ICON_NAME = AppIcon` のまま actool が拾い、Release 構成のビルドで `AppIcon60x60@2x.png`・`AppIcon76x76@2x~ipad.png` を書き出す（pbxproj・xcconfig は変えていない）。同じ名前の `AppIcon.appiconset` は消した（2026-10-22）
 - `ictool <.icon> --export-image …` は書き出すたびに標準出力へ `{` と `}` の 2 行を出す。エラーではない（終了コードで見る）（2026-10-22）
 - `icon.json` の背景の塗りは `"fill" : { "solid" : "srgb:<r>,<g>,<b>,1.00000" }`（0〜1 の小数 5 桁）。`scripts/make-app-icon-layers.swift` が元の絵の水色をこの形で表示する（2026-10-22）
+- タブの画像（`.tabItem` の `Image`）は、画像の大きさ（pt）で出る。30 pt 四方の PDF（図を四方いっぱいに描く）で、iPhone の下のタブバーの SF Symbols とほぼ同じ大きさになった。iPad（iOS 26・縦向き）の上のタブバーはラベルだけを出し、アイコンを出さない（`scripts/make-tab-icons.swift`）（2026-11-26）
+- `CGContext` で書いた PDF には作成日時・更新日時（`D:` の 14 桁）と `/ID` が入り、同じ図でも書き出すたびに中身が変わる。相互参照表の位置がずれないよう、同じ長さの固定の値に置き換えると、図を変えない限り差分が出ない（`scripts/make-tab-icons.swift`）（2026-11-26）

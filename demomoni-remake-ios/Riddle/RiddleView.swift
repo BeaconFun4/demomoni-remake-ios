@@ -44,7 +44,7 @@ struct RiddleView: View {
             }
         }
         .tabItem {
-            Image(systemName: "questionmark.bubble.fill")
+            Image(.tabRiddle)
             Text("なぞなぞ")
         }
     }

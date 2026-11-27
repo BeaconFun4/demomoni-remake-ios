@@ -34,6 +34,8 @@ xcodebuild test -project demomoni-remake-ios.xcodeproj -scheme demomoni-remake-i
   - 同じ名前のアイコン（`AppIcon.icon` と `AppIcon.appiconset`）をターゲットに同時に置かない。`.icon` を直したら `ictool`（`/Applications/Xcode.app/Contents/Applications/Icon Composer.app/Contents/Executables/ictool`）で書き出して確かめる（出力はリポジトリの外に。コミットしない）:
     `ictool demomoni-remake-ios/AppIcon.icon --export-image --output-file /tmp/icon-Default.png --platform iOS --rendition Default --width 1024 --height 1024 --scale 1`（`--rendition` は `Dark`・`ClearLight`・`TintedLight` なども）
   - 共有スキーム `demomoni-remake-ios` の Run・Test は Debug 構成（`AppIcon-Debug`）なので、`AppIcon.icon` の見た目は `-configuration Release` でビルドして確かめる
+- タブのアイコンは、うさ（歩くうさ `tekuusa` の線画にならった顔と耳）と小物（？・虫眼鏡・ピース・歯車）の単色のテンプレートの PDF（`Assets.xcassets/TabIcon/`。Preserve Vector Data）。`swift scripts/make-tab-icons.swift` で書き出し、`--preview <フォルダ>` で確認用の PNG（線画の案・塗りの案）をリポジトリの外に出す。
+  タブバーは画像の大きさのまま出すので、PDF の大きさ（スクリプトの `size`）で SF Symbols とそろえる。各タブの `.tabItem` で `Image(.tabRiddle)` などを使い、ラベルの `Text` は変えない
 - 共有スキームは 2 つ。`demomoni-remake-ios`（Run・Test は Debug、Archive は Release = App Store 版。CI の `_build.yml` と `_archive.yml` の既定はプロジェクト名と同じこのスキームなので名前を変えない）と、`demomoni-remake-ios-debug`（Run・Archive とも Debug = デバッグモード入りの `jp.shilokuma.Demomoni-debug`。テストは持たない）。CI の Archive の構成はスキームではなく `_archive.yml` の `configuration` の入力（`-configuration`）で決まる
 - Swift 6 言語モード・Strict Concurrency（complete）。既定の分離は MainActor（UI テストのターゲットだけ nonisolated）
 - SwiftLint は Build Tool Plugin（SwiftLintPlugins）で全ターゲットに効く。ルールは `.swiftlint.yml`。
