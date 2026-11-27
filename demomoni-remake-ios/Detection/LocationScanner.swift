@@ -1,5 +1,5 @@
 //
-//  BeaconScanner.swift
+//  LocationScanner.swift
 //  demomoni-remake-ios
 //
 
@@ -14,7 +14,7 @@ nonisolated enum LocationPermission: Equatable, Sendable {
     case denied
     /// 機能制限などで許可できない
     case restricted
-    /// 使用中の許可はあるが「正確な位置情報」がオフ。iBeacon の ranging はできない
+    /// 使用中の許可はあるが「正確な位置情報」がオフ。位置が数 km ずれるので、ピースの場所の範囲（`PieceArea`）を判定できない
     case reducedAccuracy
     /// 使用中の許可があり、正確な位置情報も使える
     case authorized
@@ -36,26 +36,12 @@ nonisolated enum LocationPermission: Equatable, Sendable {
     }
 }
 
-/// 見つけた iBeacon の識別子
-nonisolated struct DetectedBeacon: Hashable, Sendable {
-    let uuid: UUID
-    let major: UInt16
-    let minor: UInt16
-}
-
-extension DetectedBeacon {
-    /// 同梱データのビーコンを見つけたことにする（擬似検知用）
-    nonisolated init(_ beacon: Beacon) {
-        self.init(uuid: beacon.uuid, major: beacon.major, minor: beacon.minor)
-    }
-}
-
-/// `BeaconScanner` から届く出来事
-nonisolated enum BeaconScanEvent: Equatable, Sendable {
+/// `LocationScanner` から届く出来事
+nonisolated enum LocationScanEvent: Equatable, Sendable {
     /// 位置情報の許可が変わった
     case permissionChanged(LocationPermission)
-    /// ranging で近くの iBeacon が見つかった（空のこともある）
-    case ranged([DetectedBeacon])
+    /// 今いる場所を測った
+    case located(LocationFix)
 }
 
 /// 位置情報を使う間だけ持つ session（実機では `CLServiceSession`）。使い終えたら `invalidate()` する
@@ -64,17 +50,17 @@ protocol LocationSession: AnyObject {
     func invalidate()
 }
 
-/// iBeacon を探す仕組み。実機では CoreLocation（`CoreLocationBeaconScanner`）、
-/// UI テストと PR の撮影では擬似検知（`FakeBeaconScanner`）に差し替える
-protocol BeaconScanner: AnyObject {
+/// 今いる場所を調べる仕組み。実機では CoreLocation（`CoreLocationScanner`）、
+/// UI テストと PR の撮影では擬似検知（`FakeLocationScanner`）に差し替える
+protocol LocationScanner: AnyObject {
     /// 今の位置情報の許可
     var permission: LocationPermission { get }
-    /// 許可の変化と見つけたビーコン。受け取るのは 1 か所だけ（`BeaconDetector`）
-    var events: AsyncStream<BeaconScanEvent> { get }
+    /// 許可の変化と測った位置。受け取るのは 1 か所だけ（`PieceDetector`）
+    var events: AsyncStream<LocationScanEvent> { get }
     /// 位置情報（使用中）の session を始める。まだ許可を尋ねていなければ、始めたときに尋ねる
     func makeSession() -> any LocationSession
-    /// UUID ごとに iBeacon の ranging を始める
-    func startRanging(uuids: Set<UUID>)
-    /// ranging をやめる
-    func stopRanging()
+    /// 今いる場所を測り始める
+    func startUpdating()
+    /// 測るのをやめる
+    func stopUpdating()
 }

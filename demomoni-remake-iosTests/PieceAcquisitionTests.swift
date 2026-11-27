@@ -7,24 +7,32 @@
 import Testing
 
 struct PieceAcquisitionTests {
-    private let motomachi = Piece(id: 0, name: "元町公園", latitude: 0, longitude: 0, area: "元町・函館山", image: "piece14")
+    private let station = Piece(id: 11, name: "函館駅", latitude: 0, longitude: 0, area: "函館駅前", image: "piece11")
+    private let market = Piece(id: 10, name: "函館朝市", latitude: 0, longitude: 0, area: "函館駅前", image: "piece10")
 
-    /// まだ獲得していないピースを見つけたら「ゲットした」画面に出す
+    /// 範囲に入ったピースのうち、まだ獲得していないいちばん近いものを「ゲットした」画面に出す
     @Test
-    func newPieceIsShown() {
-        #expect(PieceAcquisition.newPiece(detected: motomachi, collectedPieceIDs: []) == motomachi)
-        #expect(PieceAcquisition.newPiece(detected: motomachi, collectedPieceIDs: [1]) == motomachi)
+    func nearestNewPieceIsShown() {
+        #expect(PieceAcquisition.newPiece(detected: [station, market], collectedPieceIDs: []) == station)
+        #expect(PieceAcquisition.newPiece(detected: [station, market], collectedPieceIDs: [1]) == station)
     }
 
-    /// 獲得済みのピースは、検知しても「ゲットした」画面に出さない
+    /// 範囲が重なっていて、近いほうを獲得済みなら、次に近いものを出す（1 つずつゲットする）
     @Test
-    func collectedPieceIsNotShownAgain() {
-        #expect(PieceAcquisition.newPiece(detected: motomachi, collectedPieceIDs: [0]) == nil)
+    func skipsCollectedPiece() {
+        #expect(PieceAcquisition.newPiece(detected: [station, market], collectedPieceIDs: [11]) == market)
     }
 
-    /// 何も見つけていなければ出さない
+    /// 範囲に入ったピースをすべて獲得済みなら、「ゲットした」画面に出さない
+    @Test
+    func collectedPiecesAreNotShownAgain() {
+        #expect(PieceAcquisition.newPiece(detected: [station], collectedPieceIDs: [11]) == nil)
+        #expect(PieceAcquisition.newPiece(detected: [station, market], collectedPieceIDs: [10, 11]) == nil)
+    }
+
+    /// どのピースの範囲にも入っていなければ出さない
     @Test
     func nothingDetected() {
-        #expect(PieceAcquisition.newPiece(detected: nil, collectedPieceIDs: []) == nil)
+        #expect(PieceAcquisition.newPiece(detected: [], collectedPieceIDs: []) == nil)
     }
 }

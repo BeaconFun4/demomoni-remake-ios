@@ -7,21 +7,22 @@
 import Foundation
 import SwiftData
 
-/// テストから許可と出来事を決められる見張り
-final class StubBeaconRegionMonitor: BeaconRegionMonitor {
-    let events: AsyncStream<BeaconRegionEvent>
+/// テストから許可・今いる場所・出来事を決められる見張り
+final class StubRegionMonitor: RegionMonitor {
+    let events: AsyncStream<RegionEvent>
     var isAlwaysAuthorized: Bool
     var hasFullAccuracy = true
+    var lastKnownCoordinate: Coordinate?
     /// CLMonitor を開けるか（位置情報の許可が無い・未決定なら開けない）
     var canOpenMonitor = true
     private(set) var alwaysAuthorizationRequests = 0
-    private(set) var conditions: [MonitoredBeacon]?
+    private(set) var conditions: [MonitoredRegion]?
     private(set) var removeAllCount = 0
     private(set) var sessions: [StubAlwaysSession] = []
-    private let continuation: AsyncStream<BeaconRegionEvent>.Continuation
+    private let continuation: AsyncStream<RegionEvent>.Continuation
 
     init(isAlwaysAuthorized: Bool) {
-        (events, continuation) = AsyncStream.makeStream(of: BeaconRegionEvent.self)
+        (events, continuation) = AsyncStream.makeStream(of: RegionEvent.self)
         self.isAlwaysAuthorized = isAlwaysAuthorized
     }
 
@@ -43,7 +44,7 @@ final class StubBeaconRegionMonitor: BeaconRegionMonitor {
     /// 条件をそろえ始めたときに呼ぶ（そろえ終える前に利用者がしたことを入れるため）
     var onSetConditions: (() async -> Void)?
 
-    func setConditions(_ conditions: [MonitoredBeacon]) async -> Bool {
+    func setConditions(_ conditions: [MonitoredRegion]) async -> Bool {
         guard canOpenMonitor else {
             return false
         }
@@ -104,7 +105,7 @@ extension NearbyPieceAlerts {
         isEnabled: Bool,
         mayHaveConditions: Bool = false,
         defaults: UserDefaults? = nil,
-        monitor: StubBeaconRegionMonitor,
+        monitor: StubRegionMonitor,
         notifier: StubPieceNotifier,
         container: ModelContainer,
         isAppActive: Bool = false

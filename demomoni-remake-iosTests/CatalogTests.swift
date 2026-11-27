@@ -12,48 +12,31 @@ import UIKit
 private final class TestBundleToken {}
 
 struct CatalogTests {
-    private let beaconUUID = UUID(uuidString: "E8C65602-6D9C-44EF-9734-B2D3EF1CD961")!
-
-    /// 同梱した 3 つの JSON を読める。ビーコン・ピース・なぞなぞは盤のマスと同じ 32 件
+    /// 同梱した 2 つの JSON を読める。ピース・なぞなぞは盤のマスと同じ 32 件
     @Test
     func loadsBundledData() throws {
         let catalog = try Catalog.load()
-        #expect(catalog.beacons.count == 32)
         #expect(catalog.pieces.count == 32)
         #expect(catalog.riddles.count == 32)
     }
 
-    /// 元アプリの 2 台のビーコンは、UUID・major・minor を元のデータのとおりに読む（獲得済みの記録が id で残っているので変えない）
+    /// ピースの id は 0〜31 で重複しない（獲得状態・なぞなぞが id でピースを指す）
     @Test
-    func decodesBeacons() throws {
-        let catalog = try Catalog.load()
-        #expect(Array(catalog.beacons.prefix(2)) == [
-            Beacon(beaconId: 0, uuid: beaconUUID, major: 0, minor: 5000),
-            Beacon(beaconId: 1, uuid: beaconUUID, major: 0, minor: 6000)
-        ])
-    }
-
-    /// 足したビーコンは仮の値で、UUID は元と同じ・major は 0・minor は 5000 + id × 1000
-    @Test
-    func beaconsFollowProvisionalRule() throws {
-        let catalog = try Catalog.load()
-        for beacon in catalog.beacons {
-            #expect(beacon.uuid == beaconUUID, "beaconId \(beacon.beaconId) の UUID")
-            #expect(beacon.major == 0, "beaconId \(beacon.beaconId) の major")
-            #expect(Int(beacon.minor) == 5000 + beacon.beaconId * 1000, "beaconId \(beacon.beaconId) の minor")
-        }
-    }
-
-    /// ピースの id は 0〜31 で、ビーコンの beaconId と 1 対 1 に対応する
-    @Test
-    func piecesAndBeaconsCorrespondOneToOne() throws {
+    func pieceIDsAreUnique() throws {
         let catalog = try Catalog.load()
         let pieceIDs = catalog.pieces.map(\.id)
-        let beaconIDs = catalog.beacons.map(\.beaconId)
         #expect(Set(pieceIDs).count == pieceIDs.count, "ピースの id が重複している")
-        #expect(Set(beaconIDs).count == beaconIDs.count, "ビーコンの beaconId が重複している")
         #expect(Set(pieceIDs) == Set(0..<32))
-        #expect(Set(pieceIDs) == Set(beaconIDs))
+    }
+
+    /// ピースの場所（範囲の中心）は、函館・大沼・北斗の中にある（緯度・経度の取り違えや、桁の誤りが無い）
+    @Test
+    func pieceCoordinatesAreInHakodateRegion() throws {
+        let catalog = try Catalog.load()
+        for piece in catalog.pieces {
+            #expect((41.7...42.1).contains(piece.latitude), "\(piece.name) の緯度 \(piece.latitude)")
+            #expect((140.5...140.9).contains(piece.longitude), "\(piece.name) の経度 \(piece.longitude)")
+        }
     }
 
     /// ピースの画像の番号は盤の 1〜32 を重複なく使い、画像はアセットにある
@@ -66,14 +49,6 @@ struct CatalogTests {
         for piece in catalog.pieces {
             #expect(UIImage(named: piece.image) != nil, "\(piece.image) のアセット")
         }
-    }
-
-    /// ビーコンの (UUID, major, minor) は重複しない（重複すると 1 台で 2 つのピースが取れてしまう）
-    @Test
-    func beaconIdentitiesAreUnique() throws {
-        let catalog = try Catalog.load()
-        let identities = catalog.beacons.map { "\($0.uuid)-\($0.major)-\($0.minor)" }
-        #expect(Set(identities).count == identities.count)
     }
 
     /// 名所の配分は函館 24・大沼 4・北斗 4。函館のエリア名は決まった書き方だけを使い、名前は重複しない
@@ -113,8 +88,8 @@ struct CatalogTests {
         #expect(piece.name == "元町公園")
         #expect(piece.area == "元町・函館山")
         #expect(piece.image == "piece14")
-        #expect(piece.latitude == 41.794689)
-        #expect(piece.longitude == 140.754003)
+        #expect(piece.latitude == 41.765501)
+        #expect(piece.longitude == 140.709514)
     }
 
     /// なぞなぞのタイトル・問題文・ヒント・答え・ピースを読む。元アプリの 2 問は文言を変えず、先頭に置く
@@ -191,32 +166,31 @@ struct CatalogTests {
         #expect(catalog.piece(id: 1)?.number == 1)
     }
 
-    /// ビーコンの UUID・major・minor から、`beaconId` と同じ id のピースを引く
+    /// ピースごとの範囲の半径を読む。同梱のピースはすべて半径を持ち、建物 1 つ（80 m）から沼（700 m）までの間にある
     @Test
-    func findsPieceForBeacon() throws {
+    func decodesRadius() throws {
         let catalog = try Catalog.load()
-        #expect(catalog.piece(forBeaconUUID: beaconUUID, major: 0, minor: 5000)?.name == "元町公園")
-        #expect(catalog.piece(forBeaconUUID: beaconUUID, major: 0, minor: 6000)?.name == "函館山")
+        #expect(catalog.piece(id: 0)?.radius == 100)
+        #expect(catalog.piece(id: 27)?.radius == 700)
+        for piece in catalog.pieces {
+            #expect((80...700).contains(piece.radius), "\(piece.name) の半径 \(piece.radius)")
+        }
     }
 
-    /// 同梱データに無いビーコン（minor・major・UUID のどれかが違う）からはピースを引かない
+    /// 半径が無いピースは既定の 100 m、0 以下の半径は読み込みのエラーにする
     @Test
-    func ignoresUnknownBeacon() throws {
-        let catalog = try Catalog.load()
-        #expect(catalog.piece(forBeaconUUID: beaconUUID, major: 0, minor: 4000) == nil)
-        #expect(catalog.piece(forBeaconUUID: beaconUUID, major: 1, minor: 5000) == nil)
-        #expect(catalog.piece(forBeaconUUID: UUID(), major: 0, minor: 5000) == nil)
-    }
-
-    /// ビーコンに対応するピースが無ければ `nil`
-    @Test
-    func returnsNilWhenBeaconHasNoPiece() {
-        let catalog = Catalog(
-            beacons: [Beacon(beaconId: 9, uuid: beaconUUID, major: 0, minor: 5000)],
-            pieces: [],
-            riddles: []
-        )
-        #expect(catalog.piece(forBeaconUUID: beaconUUID, major: 0, minor: 5000) == nil)
+    func radiusDefaultsAndValidation() throws {
+        let withoutRadius = Data("""
+        {"id": 0, "name": "x", "latitude": "41.0", "longitude": "140.0", "area": "y", "image": "piece1"}
+        """.utf8)
+        #expect(try JSONDecoder().decode(Piece.self, from: withoutRadius).radius == Piece.defaultRadius)
+        #expect(Piece.defaultRadius == 100)
+        let zeroRadius = Data("""
+        {"id": 0, "name": "x", "latitude": "41.0", "longitude": "140.0", "area": "y", "image": "piece1", "radius": 0}
+        """.utf8)
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(Piece.self, from: zeroRadius)
+        }
     }
 
     /// 緯度・経度が数値として読めないピースは、読み込みのエラーにする
@@ -233,7 +207,7 @@ struct CatalogTests {
     /// JSON が無いバンドルからは、無いファイルの名前つきのエラーで失敗する
     @Test
     func failsWhenResourceIsMissing() {
-        #expect(throws: Catalog.LoadError.missingResource("beacons.json")) {
+        #expect(throws: Catalog.LoadError.missingResource("pieces.json")) {
             try Catalog.load(from: Bundle(for: TestBundleToken.self))
         }
     }
