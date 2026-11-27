@@ -13,8 +13,8 @@ import UserNotifications
 struct DemomoniApp: App {
     /// ピースの獲得状態とサインを保存するストア
     let modelContainer: ModelContainer
-    /// 近くの iBeacon の検知。さがすタブを表示している間だけ探す（起動引数 `-fakeBeaconID` で擬似検知）
-    @State private var beaconDetector = BeaconDetector.live(options: .current, catalog: .bundled)
+    /// ピースの場所の範囲に入ったかの検知。さがすタブを表示している間だけ調べる（起動引数 `-fakePieceID` で擬似検知）
+    @State private var pieceDetector = PieceDetector.live(options: .current, catalog: .bundled)
     /// オンにした人だけ、アプリを閉じていても近くのピースを通知で知らせる
     @State private var nearbyPieceAlerts: NearbyPieceAlerts
     /// 表示しているタブ。通知を開いたときに外から切り替える
@@ -60,7 +60,7 @@ struct DemomoniApp: App {
             ContentView()
                 // 元アプリの色と画像は白地の前提（Color Set もライト・ダークで同じ値）なので、ライトに固定する
                 .preferredColorScheme(.light)
-                .environment(beaconDetector)
+                .environment(pieceDetector)
                 .environment(nearbyPieceAlerts)
                 .environment(tabSelection)
         }

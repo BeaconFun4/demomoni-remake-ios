@@ -14,21 +14,26 @@ import Testing
 struct NearbyPieceAlertsTests {
     private let catalog = Catalog.bundled
 
-    /// ピースのビーコン 1 台の条件の identifier
+    /// 函館駅の場所
+    private let hakodateStation = Coordinate(latitude: 41.7737, longitude: 140.7266)
+    /// 大沼公園の場所
+    private let onumaPark = Coordinate(latitude: 41.979, longitude: 140.669)
+
+    /// ピースの場所の円の条件の identifier
     private func identifier(pieceID: Int) throws -> String {
-        NearbyPieceMonitoring.identifier(for: try #require(catalog.beacons.first { $0.beaconId == pieceID }))
+        NearbyPieceMonitoring.identifier(for: try #require(catalog.piece(id: pieceID)))
     }
 
-    /// ピースのビーコン 1 台の条件の範囲に入った出来事
-    private func insideEvent(pieceID: Int) throws -> BeaconRegionEvent {
-        BeaconRegionEvent(identifier: try identifier(pieceID: pieceID), isInside: true, beacon: nil)
+    /// ピースの場所の円に入った出来事
+    private func insideEvent(pieceID: Int) throws -> RegionEvent {
+        RegionEvent(identifier: try identifier(pieceID: pieceID), state: .inside)
     }
 
     private func makeAlerts(
         isEnabled: Bool,
         mayHaveConditions: Bool = false,
         defaults: UserDefaults? = nil,
-        monitor: StubBeaconRegionMonitor,
+        monitor: StubRegionMonitor,
         notifier: StubPieceNotifier,
         container: ModelContainer,
         isAppActive: Bool = false
@@ -47,7 +52,7 @@ struct NearbyPieceAlertsTests {
     /// 許可がそろった見張りと通知で作る
     private func makeAuthorizedAlerts(
         isEnabled: Bool = true,
-        monitor: StubBeaconRegionMonitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true),
+        monitor: StubRegionMonitor = StubRegionMonitor(isAlwaysAuthorized: true),
         notifier: StubPieceNotifier = StubPieceNotifier(isAllowed: true),
         container: ModelContainer,
         isAppActive: Bool = false
@@ -55,13 +60,13 @@ struct NearbyPieceAlertsTests {
         makeAlerts(isEnabled: isEnabled, monitor: monitor, notifier: notifier, container: container, isAppActive: isAppActive)
     }
 
-    /// オンで許可がそろっていれば、常にの session を持ち、まだ獲得していないピースのビーコンを見張る
+    /// オンで許可がそろっていれば、常にの session を持ち、まだ獲得していないピースの場所を見張る
     @Test
     func monitorsWhenEnabledAndAuthorized() async throws {
         let container = try ModelContainer.demomoni(inMemory: true)
         let otherPieceIDs = catalog.pieces.map(\.id).filter { $0 != 3 }
         try PieceCollection(context: container.mainContext).collectAll(pieceIDs: otherPieceIDs, at: .now)
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: container)
 
         await alerts.refresh()
@@ -77,7 +82,7 @@ struct NearbyPieceAlertsTests {
     /// バックグラウンドで起こされたときに出来事を受け取れるよう、通知の許可を確かめる（`await` する）前に session を持つ
     @Test
     func holdsSessionBeforeCheckingNotificationAuthorization() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let notifier = StubPieceNotifier(isAllowed: true)
         var sessionsWhenChecked: Int?
         notifier.onCheckAuthorization = { sessionsWhenChecked = monitor.activeSessionCount }
@@ -87,29 +92,52 @@ struct NearbyPieceAlertsTests {
         #expect(sessionsWhenChecked == 1)
     }
 
-    /// 獲得が進んだら、決め直したときに条件からそのピースを外す。未獲得が上限を超える間は UUID ごと、収まったら 1 台ずつにする
+    /// 獲得が進んだら、決め直したときに条件からそのピースを外す。未獲得が上限を超える間は今いる場所に近いものと選び直す円、
+    /// 収まったらすべてのピースの場所を見張る
     @Test
     func updatesConditionsAfterCollecting() async throws {
         let container = try ModelContainer.demomoni(inMemory: true)
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
+        monitor.lastKnownCoordinate = hakodateStation
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: container)
 
         await alerts.refresh()
-        #expect(monitor.conditions?.count == 1)
-        #expect(monitor.conditions?.first?.minor == nil)
+        #expect(monitor.conditions?.count == NearbyPieceMonitoring.conditionLimit)
+        #expect(monitor.conditions?.last?.identifier.hasPrefix(NearbyPieceMonitoring.boundaryIdentifierPrefix) == true)
 
         let collected = catalog.pieces.map(\.id).prefix(catalog.pieces.count - NearbyPieceMonitoring.conditionLimit)
         try PieceCollection(context: container.mainContext).collectAll(pieceIDs: collected, at: .now)
         await alerts.refresh()
         #expect(monitor.conditions?.count == NearbyPieceMonitoring.conditionLimit)
-        #expect(monitor.conditions?.allSatisfy { $0.minor != nil } == true)
+        #expect(monitor.conditions?.allSatisfy { $0.identifier.hasPrefix("area-") } == true)
         #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: collected[0])) } == false)
+    }
+
+    /// 選び直す円から出たら、そのときの場所に近いピースを選び直す（函館駅の近く → 大沼公園の近く）
+    @Test
+    func reselectsConditionsAfterLeavingBoundary() async throws {
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
+        monitor.lastKnownCoordinate = hakodateStation
+        let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
+        await alerts.refresh()
+        let boundary = try #require(monitor.conditions?.last)
+        #expect(boundary.center == hakodateStation)
+        #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: 24)) } == false)
+
+        // 円の中にいる間（入った・分からない）は選び直さない
+        monitor.lastKnownCoordinate = onumaPark
+        await alerts.handle(RegionEvent(identifier: boundary.identifier, state: .inside))
+        #expect(monitor.conditions?.last == boundary)
+
+        await alerts.handle(RegionEvent(identifier: boundary.identifier, state: .outside))
+        #expect(monitor.conditions?.last?.center == onumaPark)
+        #expect(monitor.conditions?.contains { $0.identifier == (try? identifier(pieceID: 24)) } == true)
     }
 
     /// CLMonitor を開けなかったら（位置情報の許可が無い・未決定）、見張っていることにしない
     @Test
     func doesNotMonitorWhenMonitorCannotOpen() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         monitor.canOpenMonitor = false
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
 
@@ -127,7 +155,7 @@ struct NearbyPieceAlertsTests {
     /// 条件は外さず、CLMonitor を開かない（#120）
     @Test(arguments: [(false, true), (true, false)])
     func doesNotMonitorWithoutPermission(isAlwaysAuthorized: Bool, areNotificationsAllowed: Bool) async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: isAlwaysAuthorized)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: isAlwaysAuthorized)
         let alerts = makeAlerts(
             isEnabled: true,
             mayHaveConditions: true,
@@ -147,7 +175,7 @@ struct NearbyPieceAlertsTests {
     /// オンにしたときだけ、通知と位置情報の「常に許可」を尋ね、許可の状態を読む。オフにしたら尋ねず、状態も持たない
     @Test
     func requestsPermissionsOnlyWhenTurnedOn() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: false)
         let notifier = StubPieceNotifier(isAllowed: false)
         let alerts = makeAlerts(isEnabled: false, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
 
@@ -172,7 +200,7 @@ struct NearbyPieceAlertsTests {
     /// 通知の許可を尋ねている間にオフに戻されたら、位置情報の「常に許可」は尋ねない
     @Test
     func doesNotRequestLocationWhenTurnedOffWhileRequestingNotifications() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: false)
         let notifier = StubPieceNotifier(isAllowed: false)
         let alerts = makeAlerts(isEnabled: false, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
         notifier.onRequestAuthorization = { alerts.preference.isEnabled = false }
@@ -187,7 +215,7 @@ struct NearbyPieceAlertsTests {
     /// 起動時・アプリに戻ったときの決め直しでは許可を尋ねない。設定アプリで許可されて戻ったら見張り始める
     @Test
     func startsMonitoringAfterPermissionsAreGrantedInSettings() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: false)
         let notifier = StubPieceNotifier(isAllowed: false)
         let alerts = makeAlerts(isEnabled: true, monitor: monitor, notifier: notifier, container: try .demomoni(inMemory: true))
         await alerts.refresh()
@@ -205,7 +233,7 @@ struct NearbyPieceAlertsTests {
     /// 「常に」でも正確な位置情報がオフなら見張らない
     @Test
     func doesNotMonitorWithReducedAccuracy() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         monitor.hasFullAccuracy = false
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
 
@@ -218,7 +246,7 @@ struct NearbyPieceAlertsTests {
     /// オンにしたことが無ければ、CLMonitor に触れない（スイッチがオフの人の挙動を変えない）
     @Test
     func doesNothingWhenNeverEnabled() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(isEnabled: false, monitor: monitor, container: try .demomoni(inMemory: true))
 
         await alerts.refresh()
@@ -227,7 +255,7 @@ struct NearbyPieceAlertsTests {
         #expect(monitor.sessions.isEmpty)
     }
 
-    /// まだ獲得していないピースのビーコンの範囲に入ったら通知を出す。獲得は保存しない
+    /// まだ獲得していないピースの場所の範囲に入ったら通知を出す。獲得は保存しない
     @Test
     func postsNotificationForUncollectedPiece() async throws {
         let container = try ModelContainer.demomoni(inMemory: true)

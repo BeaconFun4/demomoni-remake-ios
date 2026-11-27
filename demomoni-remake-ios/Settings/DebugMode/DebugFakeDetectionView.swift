@@ -8,11 +8,11 @@ import SwiftData
 import SwiftUI
 
 /// デバッグモードの擬似検知（Debug 構成だけ）。まだ獲得していないピースを選ぶと、
-/// そのピースのビーコンを見つけたことにして、さがすタブに切り替える。
-/// さがすタブは表示している間だけ探すので、検知は `BeaconDetector` が持っておき、さがすタブが探し始めたときに届く
+/// そのピースの場所に来たことにして、さがすタブに切り替える。
+/// さがすタブは表示している間だけ調べるので、検知は `PieceDetector` が持っておき、さがすタブが調べ始めたときに届く
 struct DebugFakeDetectionView: View {
     @Environment(\.catalog) private var catalog
-    @Environment(BeaconDetector.self) private var detector
+    @Environment(PieceDetector.self) private var detector
     @Environment(\.showSearchTab) private var showSearchTab
     @Query private var collected: [CollectedPiece]
 
@@ -53,7 +53,7 @@ struct DebugFakeDetectionView: View {
     NavigationStack {
         DebugFakeDetectionView()
     }
-    .environment(BeaconDetector.live(options: LaunchOptions(usesLocationServices: false), catalog: .bundled))
+    .environment(PieceDetector.live(options: LaunchOptions(usesLocationServices: false), catalog: .bundled))
     // swiftlint:disable:next force_try
     .modelContainer(try! .demomoni(inMemory: true))
 }

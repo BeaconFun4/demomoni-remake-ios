@@ -66,6 +66,10 @@ struct PieceDetailView: View {
                 .padding(24)
                 .glassEffect(.regular, in: .rect(cornerRadius: 24))
                 .frame(maxWidth: 600)
+
+                // 場所の地図。押すと大きな地図を開く
+                PieceLocationMap(piece: piece)
+                    .frame(maxWidth: 600)
             }
             .padding()
             .frame(maxWidth: .infinity)

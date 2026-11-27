@@ -16,7 +16,7 @@ struct NearbyPieceAlertsCleanupTests {
     private func makeAlerts(
         isEnabled: Bool,
         defaults: UserDefaults? = nil,
-        monitor: StubBeaconRegionMonitor,
+        monitor: StubRegionMonitor,
         notifier: StubPieceNotifier,
         container: ModelContainer
     ) -> NearbyPieceAlerts {
@@ -26,7 +26,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// 許可がそろった見張りと通知で作る
     private func makeAuthorizedAlerts(
         isEnabled: Bool = true,
-        monitor: StubBeaconRegionMonitor,
+        monitor: StubRegionMonitor,
         container: ModelContainer
     ) -> NearbyPieceAlerts {
         makeAlerts(isEnabled: isEnabled, monitor: monitor, notifier: StubPieceNotifier(isAllowed: true), container: container)
@@ -35,7 +35,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// オフにした直後は、条件をすべて外して session を終え、記録を下ろす
     @Test
     func stopsMonitoringWhenTurnedOff() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
         await alerts.refresh()
         #expect(alerts.isMonitoring)
@@ -53,7 +53,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// 起動時・前面に戻ったときの決め直しでは、オフでも条件を外さない（片付けのためだけに CLMonitor を開かない。#120）。session は終える
     @Test
     func doesNotRemoveConditionsOnRefreshWhenDisabled() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
         await alerts.refresh()
         #expect(alerts.isMonitoring)
@@ -76,7 +76,7 @@ struct NearbyPieceAlertsCleanupTests {
             defaults.set(false, forKey: NearbyPieceAlertPreference.key)
         }
         defaults.set(mayHaveConditions, forKey: NearbyPieceAlertPreference.conditionsKey)
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAlerts(
             isEnabled: false,
             defaults: defaults,
@@ -101,7 +101,7 @@ struct NearbyPieceAlertsCleanupTests {
         let alerts = makeAlerts(
             isEnabled: true,
             defaults: defaults,
-            monitor: StubBeaconRegionMonitor(isAlwaysAuthorized: true),
+            monitor: StubRegionMonitor(isAlwaysAuthorized: true),
             notifier: StubPieceNotifier(isAllowed: true),
             container: try .demomoni(inMemory: true)
         )
@@ -117,7 +117,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// 記録が下りていれば（条件を足したことが無い・外し終えた）、オフにしても CLMonitor を開かない
     @Test
     func doesNotOpenMonitorWhenTurnedOffWithoutConditions() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: false)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: false)
         let alerts = makeAlerts(
             isEnabled: true,
             monitor: monitor,
@@ -135,7 +135,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// オフにした直後でも、CLMonitor を開けなければ（位置情報の許可が無い・未決定）条件は外せないので、記録を残す。session は終える
     @Test
     func keepsRecordWhenMonitorCannotOpenOnTurningOff() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(monitor: monitor, container: try .demomoni(inMemory: true))
         await alerts.refresh()
         #expect(alerts.isMonitoring)
@@ -152,7 +152,7 @@ struct NearbyPieceAlertsCleanupTests {
     /// オン → オフを続けて切り替えても、条件をそろえ終えてから外す（足すのと外すのが入れ違わない）
     @Test
     func processesTurningOnAndOffInOrder() async throws {
-        let monitor = StubBeaconRegionMonitor(isAlwaysAuthorized: true)
+        let monitor = StubRegionMonitor(isAlwaysAuthorized: true)
         let alerts = makeAuthorizedAlerts(isEnabled: false, monitor: monitor, container: try .demomoni(inMemory: true))
         let (settingStarted, settingStartedContinuation) = AsyncStream.makeStream(of: Void.self)
         let (gate, gateContinuation) = AsyncStream.makeStream(of: Void.self)
