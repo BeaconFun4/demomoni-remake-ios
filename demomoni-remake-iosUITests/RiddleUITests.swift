@@ -5,6 +5,18 @@
 
 import XCTest
 
+/// 一覧の 1 問目（答えは五稜郭タワー）と 2 問目（答えは函館山）のタイトル・問題文。`riddles.json` と同じ文
+private enum RiddleText {
+    static let firstTitle = "昼間の星"
+    static let firstContent = "昼間なのに、星が見えるタワーがあるんだって。でも、空を見上げても見えないよ。なーんだ？"
+    static let secondTitle = "山なのに入れもの？"
+    static let secondContent = """
+        手紙をポストに入れることを「投□（とうかん）」というよ。ポストは手紙の入れもの。\
+        この□の字を名前の1文字めに使った山があるんだって。山なのに入れもの……？ \
+        わけは、答えの名前を見て、ふもとの街を思いうかべるとわかるよ。
+        """
+}
+
 final class RiddleUITests: XCTestCase {
     override func setUpWithError() throws {
         // UI テストでは失敗した時点で即座に止める
@@ -19,9 +31,9 @@ final class RiddleUITests: XCTestCase {
         app.launch()
 
         app.tabButton("なぞなぞ").tap()
-        app.buttons["函館ののっぽ"].tap()
+        app.buttons[RiddleText.firstTitle].tap()
 
-        XCTAssertTrue(app.staticTexts["函館の白くて高いものといえば？"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[RiddleText.firstContent].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["ヒント、五◯郭タワー"].exists)
 
         app.buttons["ヒントをみる"].tap()
@@ -37,12 +49,12 @@ final class RiddleUITests: XCTestCase {
         app.launch()
 
         app.tabButton("なぞなぞ").tap()
-        let riddle = app.buttons["函館ののっぽ"]
+        let riddle = app.buttons[RiddleText.firstTitle]
         XCTAssertTrue(riddle.waitForExistence(timeout: 5))
         XCTAssertNotEqual(riddle.value as? String, "ゲットずみ")
 
         riddle.tap()
-        XCTAssertTrue(app.staticTexts["函館の白くて高いものといえば？"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts[RiddleText.firstContent].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["こたえ、五稜郭タワー"].exists)
     }
 
@@ -54,10 +66,10 @@ final class RiddleUITests: XCTestCase {
         app.launch()
 
         app.tabButton("なぞなぞ").tap()
-        let solved = app.buttons["函館ののっぽ"]
+        let solved = app.buttons[RiddleText.firstTitle]
         XCTAssertTrue(solved.waitForExistence(timeout: 5))
         XCTAssertEqual(solved.value as? String, "ゲットずみ")
-        XCTAssertNotEqual(app.buttons["函館の見晴らし台"].value as? String, "ゲットずみ")
+        XCTAssertNotEqual(app.buttons[RiddleText.secondTitle].value as? String, "ゲットずみ")
 
         solved.tap()
         XCTAssertTrue(app.staticTexts["こたえ、五稜郭タワー"].waitForExistence(timeout: 5))
@@ -65,8 +77,8 @@ final class RiddleUITests: XCTestCase {
         XCTAssertTrue(app.buttons["ヒントをみる"].exists)
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
-        app.buttons["函館の見晴らし台"].tap()
-        XCTAssertTrue(app.staticTexts["函館で夜景が綺麗な有名なところといえば？"].waitForExistence(timeout: 5))
+        app.buttons[RiddleText.secondTitle].tap()
+        XCTAssertTrue(app.staticTexts[RiddleText.secondContent].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["こたえ、函館山"].exists)
     }
 
@@ -78,12 +90,12 @@ final class RiddleUITests: XCTestCase {
         app.launch()
 
         app.tabButton("なぞなぞ").tap()
-        app.buttons["函館ののっぽ"].tap()
+        app.buttons[RiddleText.firstTitle].tap()
         app.buttons["ヒントをみる"].tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
-        app.buttons["函館の見晴らし台"].tap()
-        XCTAssertTrue(app.staticTexts["函館で夜景が綺麗な有名なところといえば？"].waitForExistence(timeout: 5))
+        app.buttons[RiddleText.secondTitle].tap()
+        XCTAssertTrue(app.staticTexts[RiddleText.secondContent].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["ヒントをみる"].exists)
     }
 }
