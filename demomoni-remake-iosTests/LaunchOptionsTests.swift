@@ -20,18 +20,18 @@ struct LaunchOptionsTests {
         #expect(LaunchOptions(arguments: ["demomoni-remake-ios", "-uiTesting"]).usesInMemoryStore)
     }
 
-    /// `-fakeBeaconID <id>` で擬似検知するビーコンを指定する
+    /// `-fakePieceID <id>` で、擬似検知でいることにするピースの場所を指定する
     @Test
-    func readsFakeBeaconID() {
-        #expect(LaunchOptions(arguments: ["app", "-uiTesting", "-fakeBeaconID", "1"]).fakeBeaconID == 1)
-        #expect(LaunchOptions(arguments: ["app", "-uiTesting"]).fakeBeaconID == nil)
+    func readsFakePieceID() {
+        #expect(LaunchOptions(arguments: ["app", "-uiTesting", "-fakePieceID", "1"]).fakePieceID == 1)
+        #expect(LaunchOptions(arguments: ["app", "-uiTesting"]).fakePieceID == nil)
     }
 
-    /// `-fakeBeaconID` の値が無い・数でないときは、擬似検知しない
+    /// `-fakePieceID` の値が無い・数でないときは、擬似検知しない
     @Test
-    func ignoresInvalidFakeBeaconID() {
-        #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID"]).fakeBeaconID == nil)
-        #expect(LaunchOptions(arguments: ["app", "-fakeBeaconID", "one"]).fakeBeaconID == nil)
+    func ignoresInvalidFakePieceID() {
+        #expect(LaunchOptions(arguments: ["app", "-fakePieceID"]).fakePieceID == nil)
+        #expect(LaunchOptions(arguments: ["app", "-fakePieceID", "one"]).fakePieceID == nil)
     }
 
     /// `-uiTesting` と Unit テストのホストでは、実際の位置情報を使わない

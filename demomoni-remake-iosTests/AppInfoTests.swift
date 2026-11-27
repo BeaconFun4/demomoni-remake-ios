@@ -67,11 +67,11 @@ struct AppInfoTests {
     }
 
     /// 位置情報（使用中の許可）の利用目的が Info.plist に入っていることを確認する。
-    /// 無いと CLLocationManager の許可のダイアログが出ず、iBeacon を検知できない
+    /// 無いと CLLocationManager の許可のダイアログが出ず、ピースの場所の範囲に入ったかを調べられない
     @Test
     func locationWhenInUseUsageDescriptionIsSet() {
         let description = Bundle.main.object(forInfoDictionaryKey: "NSLocationWhenInUseUsageDescription") as? String
-        #expect(description == "近くのビーコンを見つけて、ピースをゲットするために使います")
+        #expect(description == "ピースの場所の近くに来たことを調べて、ピースをゲットするために使います")
     }
 
     /// 位置情報（常に許可）の利用目的が Info.plist に入っていて空でないことを確認する。

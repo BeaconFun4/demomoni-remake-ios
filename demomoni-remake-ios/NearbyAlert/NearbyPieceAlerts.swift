@@ -9,7 +9,7 @@ import SwiftData
 import UIKit
 
 /// 「アプリを閉じていても近くのピースを知らせる」。スイッチがオンで許可がそろっている間だけ、
-/// `CLMonitor` でまだ獲得していないピースのビーコンを見張り、範囲に入ったらローカル通知を出す（獲得は保存しない。さがすタブで行う）。
+/// `CLMonitor` でまだ獲得していないピースの場所の範囲（円）を見張り、範囲に入ったらローカル通知を出す（獲得は保存しない。さがすタブで行う）。
 /// スイッチをオンにしたことの無い人には、許可を尋ねず、`CLMonitor`・`CLServiceSession` も作らない。
 /// 起動時・前面に戻ったときに `CLMonitor` を開くのは、オンで許可がそろっている人だけ。条件を外すのはオフにした直後だけにする
 /// （TestFlight の 1.0 (4) で、起動直後に片付けのために開いた `CLMonitor` の初期化で落ちた。#120）
@@ -24,7 +24,7 @@ final class NearbyPieceAlerts {
 
     @ObservationIgnored private let catalog: Catalog
     @ObservationIgnored private let container: ModelContainer
-    @ObservationIgnored private let monitor: any BeaconRegionMonitor
+    @ObservationIgnored private let monitor: any RegionMonitor
     @ObservationIgnored private let notifier: any PieceNotifier
     /// アプリが前面か（前面のときは通知を出さない）
     @ObservationIgnored private let isAppActive: () -> Bool
@@ -39,7 +39,7 @@ final class NearbyPieceAlerts {
         preference: NearbyPieceAlertPreference,
         catalog: Catalog,
         container: ModelContainer,
-        monitor: any BeaconRegionMonitor,
+        monitor: any RegionMonitor,
         notifier: any PieceNotifier,
         isAppActive: @escaping () -> Bool
     ) {
@@ -82,8 +82,13 @@ final class NearbyPieceAlerts {
         await refresh(removesConditionsWhenDisabled: true)
     }
 
-    /// `CLMonitor` の出来事を扱う。まだ獲得していないピースのビーコンの範囲に入り、アプリが前面でなければ通知を出す
-    func handle(_ event: BeaconRegionEvent) async {
+    /// `CLMonitor` の出来事を扱う。まだ獲得していないピースの場所の範囲に入り、アプリが前面でなければ通知を出す。
+    /// 選び直す円から出たら、今いる場所に近いピースを選び直す（未獲得のピースが条件の上限より多いとき）
+    func handle(_ event: RegionEvent) async {
+        if NearbyPieceMonitoring.needsReselection(after: event) {
+            await refresh()
+            return
+        }
         guard preference.isEnabled,
               let collected = try? PieceCollection(context: container.mainContext).collectedPieceIDs(),
               let piece = NearbyPieceMonitoring.pieceToNotify(
@@ -147,7 +152,11 @@ final class NearbyPieceAlerts {
         let collected = (try? PieceCollection(context: container.mainContext).collectedPieceIDs()) ?? []
         // 位置情報の許可が無く CLMonitor を開けなかったときは、見張っていることにしない
         isMonitoring = await monitor.setConditions(
-            NearbyPieceMonitoring.conditions(beacons: catalog.beacons, collectedPieceIDs: collected)
+            NearbyPieceMonitoring.conditions(
+                pieces: catalog.pieces,
+                collectedPieceIDs: collected,
+                near: monitor.lastKnownCoordinate
+            )
         )
         if isMonitoring {
             preference.mayHaveConditions = true
@@ -170,7 +179,7 @@ extension NearbyPieceAlerts {
                 preference: NearbyPieceAlertPreference(defaults: nil),
                 catalog: catalog,
                 container: container,
-                monitor: InactiveBeaconRegionMonitor(),
+                monitor: InactiveRegionMonitor(),
                 notifier: InactivePieceNotifier(),
                 isAppActive: { true }
             )
@@ -179,7 +188,7 @@ extension NearbyPieceAlerts {
             preference: NearbyPieceAlertPreference(defaults: .standard),
             catalog: catalog,
             container: container,
-            monitor: CoreLocationBeaconRegionMonitor.shared,
+            monitor: CoreLocationRegionMonitor.shared,
             notifier: UserNotificationPieceNotifier(),
             isAppActive: { UIApplication.shared.applicationState == .active }
         )
